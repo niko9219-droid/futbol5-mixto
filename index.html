@@ -301,6 +301,46 @@
   }
 }
 </style>
+
+<style id="player-statistics-v1">
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.plantel-stats-table{min-width:900px}
+.plantel-stats-table th,.plantel-stats-table td{vertical-align:middle}
+.num-stat{text-align:center;font-weight:700;min-width:34px}
+.stat-win{color:#277A49}.stat-draw{color:#9A7A18}.stat-loss{color:#B23A3A}.stat-best{color:#C68A16}.stat-worst{color:#B23A3A}
+.row-actions{white-space:nowrap;text-align:right}
+.stats-mini{margin-right:4px}
+.stats-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;font-size:12px;color:var(--tinta-suave)}
+.stats-legend span{white-space:nowrap}
+.player-stats-detail{margin-top:16px;padding:16px;border-radius:14px;background:#F7F4EA;border:1px solid var(--tiza-oscura)}
+.player-stats-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.player-stats-head h3{margin:0 0 5px}
+.player-stats-grid{display:grid;grid-template-columns:repeat(6,minmax(75px,1fr));gap:8px;margin-top:14px}
+.player-stats-grid>div{background:#fff;border:1px solid rgba(18,64,43,.10);border-radius:10px;padding:10px;text-align:center}
+.player-stats-grid b{display:block;font-size:22px;line-height:1.1}.player-stats-grid span{font-size:11px;color:var(--tinta-suave)}
+.player-winrate{margin-top:12px;padding:10px 12px;border-radius:10px;background:#EAF4ED;color:#28563A}
+@media(max-width:700px){.player-stats-grid{grid-template-columns:repeat(3,1fr)}.player-stats-detail{padding:12px}}
+</style>
+
+<style id="pending-kpi-button-fix">
+.pending-kpi-btn{
+  cursor:pointer;
+  font:inherit;
+  color:inherit;
+  text-align:left;
+  transition:transform .16s ease, filter .16s ease, box-shadow .16s ease;
+}
+.pending-kpi-btn:hover{
+  transform:translateY(-2px);
+  filter:brightness(1.06);
+  box-shadow:0 8px 18px rgba(0,0,0,.14);
+}
+.pending-kpi-btn:active{transform:translateY(0)}
+.pending-kpi-btn:focus-visible{
+  outline:3px solid #F2B84B;
+  outline-offset:2px;
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -660,6 +700,32 @@ function exportarExcel(){
 
 function uid(){ return 'p_' + Math.random().toString(36).slice(2,9); }
 
+function seleccionarPartidoPendiente(id){
+  const match=obtenerPartidoPendiente(id);
+  if(!match) {
+    alert('No encontré ese partido pendiente.');
+    renderStats();
+    return;
+  }
+  sincronizarLastTeamsConPartido(match);
+  guardarEstadoLocal();
+  renderStats();
+  switchTab('resultado');
+}
+
+function abrirPartidosPendientes(){
+  const pendientes=partidosPendientes();
+  if(!pendientes.length){
+    renderStats();
+    return;
+  }
+  // Siempre abre el último partido pendiente seleccionado/guardado,
+  // y si no existe, toma el más reciente.
+  const match = (state.lastTeams?.matchId && obtenerPartidoPendiente(state.lastTeams.matchId))
+    || pendientes[pendientes.length-1];
+  seleccionarPartidoPendiente(match.id);
+}
+
 function renderStats(){
   const activos = state.players.filter(p=>p.active!==false);
   const totalJugadores = activos.length;
@@ -667,7 +733,11 @@ function renderStats(){
   const mujeres = activos.filter(p=>p.gender==='F').length;
   const varones = activos.filter(p=>p.gender==='M').length;
   const pendientes = partidosPendientes();
-  const kpiPendiente = pendientes.length ? `<div class="stat pending-kpi"><div class="n">${pendientes.length}</div><div class="l">Partido${pendientes.length>1?'s':''} pendiente${pendientes.length>1?'s':''}</div></div>` : '';
+  const kpiPendiente = pendientes.length ? `
+    <button type="button" class="stat pending-kpi pending-kpi-btn" onclick="abrirPartidosPendientes()" title="Ver partidos pendientes">
+      <div class="n">${pendientes.length}</div>
+      <div class="l">Partido${pendientes.length>1?'s':''} pendiente${pendientes.length>1?'s':''}</div>
+    </button>` : '';
   document.getElementById('statsRow').innerHTML = `
     <div class="stat"><div class="n">${totalJugadores}</div><div class="l">Jugadores</div></div>
     <div class="stat"><div class="n">${mujeres}</div><div class="l">Mujeres</div></div>
@@ -675,6 +745,77 @@ function renderStats(){
     <div class="stat"><div class="n">${totalPartidos}</div><div class="l">Partidos jugados</div></div>
     ${kpiPendiente}
   `;
+}
+
+
+function textoJugadorNormalizado(txt){
+  return String(txt||'').replace(/\s*\([^)]*\)\s*$/,'').trim().toLowerCase();
+}
+function matchIncluyeJugador(m,p){
+  if(!m || m.estado==='armado') return null;
+  const id=p.id;
+  if((m.teamAIds||[]).includes(id)) return 'A';
+  if((m.teamBIds||[]).includes(id)) return 'B';
+  const objetivo=p.name.toLowerCase();
+  const visible=nombreVisible(p).toLowerCase();
+  const enA=(m.teamA||[]).some(x=>textoJugadorNormalizado(x)===objetivo || String(x).toLowerCase()===visible);
+  if(enA) return 'A';
+  const enB=(m.teamB||[]).some(x=>textoJugadorNormalizado(x)===objetivo || String(x).toLowerCase()===visible);
+  if(enB) return 'B';
+  return null;
+}
+function jugadorEstadisticas(p){
+  const stats={jugados:0,ganados:0,perdidos:0,empatados:0,destacados:0,costaron:0};
+  state.matches.filter(m=>m.estado!=='armado').forEach(m=>{
+    const lado=matchIncluyeJugador(m,p);
+    if(!lado) return;
+    stats.jugados++;
+    if(m.resultadoTipo==='empate' || (m.resultadoTipo===undefined && Number(m.scoreA||0)===Number(m.scoreB||0))){
+      stats.empatados++;
+    }else if(m.resultadoTipo==='local'){
+      lado==='A' ? stats.ganados++ : stats.perdidos++;
+    }else if(m.resultadoTipo==='visitante'){
+      lado==='B' ? stats.ganados++ : stats.perdidos++;
+    }
+    const pn=p.name.toLowerCase();
+    const visible=nombreVisible(p).toLowerCase();
+    const best=(m.best||[]).some(x=>textoJugadorNormalizado(x)===pn || String(x).toLowerCase()===visible);
+    const worst=(m.worst||[]).some(x=>textoJugadorNormalizado(x)===pn || String(x).toLowerCase()===visible);
+    if(best) stats.destacados++;
+    if(worst) stats.costaron++;
+  });
+  stats.porcentaje=stats.jugados ? (stats.ganados/stats.jugados)*100 : 0;
+  return stats;
+}
+function renderJugadorStatsPanel(p){
+  if(!p) return '';
+  const s=jugadorEstadisticas(p);
+  return `<div class="player-stats-detail">
+    <div class="player-stats-head">
+      <div><h3>📊 Estadísticas de ${nombreVisible(p)}</h3><div class="desc">${estrellas(p.skill)} ${especialLabel(p.habilidadEspecial)}</div></div>
+      <button class="btn-mini" onclick="cerrarJugadorStats()" title="Cerrar">✕</button>
+    </div>
+    <div class="player-stats-grid">
+      <div><b>${s.jugados}</b><span>Partidos</span></div>
+      <div class="win"><b>${s.ganados}</b><span>Ganados</span></div>
+      <div class="draw"><b>${s.empatados}</b><span>Empatados</span></div>
+      <div class="loss"><b>${s.perdidos}</b><span>Perdidos</span></div>
+      <div class="best"><b>${s.destacados}</b><span>Destacó</span></div>
+      <div class="worst"><b>${s.costaron}</b><span>Costó</span></div>
+    </div>
+    <div class="player-winrate">🏆 Porcentaje de victorias: <strong>${numeroARating(s.porcentaje)}%</strong></div>
+  </div>`;
+}
+function mostrarEstadisticasJugador(id){
+  const p=state.players.find(x=>x.id===id);
+  const el=document.getElementById('playerStatsPanel');
+  if(!p || !el) return;
+  el.innerHTML=renderJugadorStatsPanel(p);
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cerrarJugadorStats(){
+  const el=document.getElementById('playerStatsPanel');
+  if(el) el.innerHTML='';
 }
 
 /* ---------- TAB: PLANTEL ---------- */
@@ -685,67 +826,53 @@ function renderPlantel(){
   const rows = state.players.filter(p=>p.active!==false)
     .slice()
     .sort((a,b)=>b.skill-a.skill)
-    .map(p=>`
+    .map(p=>{
+      const s=jugadorEstadisticas(p);
+      return `
       <tr>
         <td>${p.name}${p.apodo?` <span class="desc" style="font-style:italic;">"${p.apodo}"</span>`:''} <span class="gender-tag ${p.gender}">${genderLabel(p.gender)}</span> ${plantelEditMode ? `<button class="gk-badge-toggle ${p.esArquero?'on':''}" onclick="toggleArquero('${p.id}')">🧤</button>` : (p.esArquero ? `<span class="gk-badge-toggle on" style="cursor:default;">🧤</span>` : '')}</td>
         <td>${estrellas(p.skill)}</td>
-        <td>${p.matchesPlayed||0}</td>
-        <td>${plantelEditMode ? `<button class="btn-mini" title="Modificar jugador/a" onclick="editarPlayer('${p.id}')">✎</button><button class="del-icon" title="Quitar jugador/a" onclick="deletePlayer('${p.id}')">✕</button>` : ''}</td>
-      </tr>
-    `).join('');
+        <td>${especialLabel(p.habilidadEspecial)}</td>
+        <td class="num-stat">${s.jugados}</td>
+        <td class="num-stat stat-win">${s.ganados}</td>
+        <td class="num-stat stat-draw">${s.empatados}</td>
+        <td class="num-stat stat-loss">${s.perdidos}</td>
+        <td class="num-stat stat-best">${s.destacados}</td>
+        <td class="num-stat stat-worst">${s.costaron}</td>
+        <td class="row-actions">
+          <button class="btn-mini stats-mini" title="Ver estadísticas" onclick="mostrarEstadisticasJugador('${p.id}')">📊</button>
+          ${plantelEditMode ? `<button class="btn-mini" title="Modificar jugador/a" onclick="editarPlayer('${p.id}')">✎</button><button class="del-icon" title="Quitar jugador/a" onclick="deletePlayer('${p.id}')">✕</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
 
   document.getElementById('content').innerHTML = `
     <div class="card">
       <h2>Agregar jugador/a</h2>
       <p class="desc"><div class="specialty-help"><strong>🎯 Habilidad especial</strong><span>Elegí la característica que mejor representa cómo juega habitualmente. Complementa la ⭐ habilidad general y tiene un peso menor en el armado.</span></div><p class="desc">El puntaje inicial es una estimación tuya de 1 a 10. Este número queda oculto y se muestra con hasta 5 estrellas, incluyendo medias estrellas. Se va a ir ajustando solo después de cada partido.</p>
       <div class="row player-add-row">
-        <div>
-          <label>Nombre</label>
-          <input type="text" id="newName" placeholder="Ej: Camila">
-        </div>
-        <div>
-          <label>Apodo (opcional)</label>
-          <input type="text" id="newApodo" placeholder="Ej: Cami">
-        </div>
-        <div style="max-width:110px;">
-          <label>Género</label>
-          <select id="newGender">
-            <option value="F">Mujer</option>
-            <option value="M">Varón</option>
-          </select>
-        </div>
-        <div style="max-width:110px;">
-          <label>Puntaje inicial (1-10)</label>
-          <input type="number" id="newSkill" min="1" max="10" step="0.5" value="6">
-        </div>
-        <div style="max-width:140px;">
-          <label>¿Arquero?</label>
-          <select id="newArquero">
-            <option value="no">No</option>
-            <option value="si">Sí</option>
-          </select>
-        </div>
-        <div class="new-specialty-field" style="max-width:190px;">
-          <label>Habilidad especial</label>
-          <select id="newEspecial">
-            ${HABILIDADES_ESPECIALES.map(e=>`<option value="${e.value}">${e.label}</option>`).join('')}
-          </select>
-        </div>
-        <div style="max-width:140px;">
-          <button class="btn" onclick="addPlayer()">Agregar</button>
-        </div>
+        <div><label>Nombre</label><input type="text" id="newName" placeholder="Ej: Camila"></div>
+        <div><label>Apodo (opcional)</label><input type="text" id="newApodo" placeholder="Ej: Cami"></div>
+        <div style="max-width:110px;"><label>Género</label><select id="newGender"><option value="F">Mujer</option><option value="M">Varón</option></select></div>
+        <div style="max-width:110px;"><label>Puntaje inicial (1-10)</label><input type="number" id="newSkill" min="1" max="10" step="0.5" value="6"></div>
+        <div style="max-width:140px;"><label>¿Arquero?</label><select id="newArquero"><option value="no">No</option><option value="si">Sí</option></select></div>
+        <div class="new-specialty-field" style="max-width:190px;"><label>Habilidad especial</label><select id="newEspecial">${HABILIDADES_ESPECIALES.map(e=>`<option value="${e.value}">${e.label}</option>`).join('')}</select></div>
+        <div style="max-width:140px;"><button class="btn" onclick="addPlayer()">Agregar</button></div>
       </div>
     </div>
 
     <div class="card">
       <h2>Plantel (${state.players.filter(p=>p.active!==false).length})</h2>
-      <p class="desc">Ordenado por habilidad. Los controles de arquero, modificar y quitar jugador/a aparecen solo en modo edición.</p>
+      <p class="desc">Además de la habilidad y especialidad, ahora podés consultar automáticamente el rendimiento histórico de cada jugador.</p>
       <button class="edit-link" onclick="togglePlantelEdit()">${plantelEditMode ? 'Ocultar edición' : 'Editar plantel (modificar / quitar / marcar arquero)'}</button>
       ${state.players.some(p=>p.active!==false) ? `
-      <table style="margin-top:10px;">
-        <thead><tr><th>Jugador/a</th><th>Habilidad</th><th>Especialidad</th><th>Partidos</th><th></th></tr></thead>
+      <div class="table-scroll">
+      <table class="plantel-stats-table" style="margin-top:10px;">
+        <thead><tr><th>Jugador/a</th><th>Habilidad</th><th>Especialidad</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>⭐</th><th>🔻</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
-      </table>` : `<div class="empty">Todavía no cargaste jugadores.</div>`}
+      </table></div>` : `<div class="empty">Todavía no cargaste jugadores.</div>`}
+      <div class="stats-legend"><span><b>PJ</b> partidos</span><span class="stat-win"><b>G</b> ganados</span><span class="stat-draw"><b>E</b> empatados</span><span class="stat-loss"><b>P</b> perdidos</span><span class="stat-best"><b>⭐</b> destacó</span><span class="stat-worst"><b>🔻</b> costó</span></div>
+      <div id="playerStatsPanel"></div>
     </div>
 
     ${state.players.some(p=>p.active!==false) ? `
@@ -759,10 +886,7 @@ function renderPlantel(){
 </div></div><div class="card">
       <h2>Evolución de habilidad</h2>
       <p class="desc">Elegí un jugador o jugadora para ver cómo fue cambiando su habilidad partido a partido.</p>
-      <div class="row">
-        <div style="max-width:260px;"><select id="evoSelect">${state.players.filter(p=>p.active!==false).map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('')}</select></div>
-        <div style="max-width:140px;"><button class="btn secondary" onclick="mostrarEvolucion()">Ver gráfico</button></div>
-      </div>
+      <div class="row"><div style="max-width:260px;"><select id="evoSelect">${state.players.filter(p=>p.active!==false).map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('')}</select></div><div style="max-width:140px;"><button class="btn secondary" onclick="mostrarEvolucion()">Ver gráfico</button></div></div>
       <div id="evoChart"></div>
     </div>` : ''}
   `;
