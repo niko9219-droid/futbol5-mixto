@@ -341,6 +341,67 @@
   outline-offset:2px;
 }
 </style>
+
+<style id="plantel-mobile-layout-v2">
+.player-name-mobile{display:none}
+.mobile-stats{display:none}
+.mobile-stats-head{display:none}
+
+@media(max-width:700px){
+  .table-scroll{
+    overflow-x:visible;
+    width:100%;
+  }
+  .plantel-stats-table{
+    min-width:0;
+    width:100%;
+    table-layout:auto;
+  }
+  .plantel-stats-table th,
+  .plantel-stats-table td{
+    padding:10px 6px;
+  }
+  .plantel-stats-table th:nth-child(1){width:31%}
+  .plantel-stats-table th:nth-child(2){width:29%}
+  .plantel-stats-table th:nth-child(3){width:20%}
+  .plantel-stats-table th:nth-child(4){width:20%}
+  .player-name-full{display:none}
+  .player-name-mobile{
+    display:inline;
+    font-weight:700;
+    font-size:15px;
+  }
+  .mobile-stats-head{display:table-cell}
+  .mobile-stats{
+    display:flex;
+    flex-wrap:wrap;
+    gap:3px 7px;
+    align-items:center;
+    font-size:11px;
+    line-height:1.25;
+    color:var(--tinta-suave);
+  }
+  .mobile-stats span{white-space:nowrap}
+  .mobile-stats b{font-weight:800}
+  .desktop-stat{display:none!important}
+  .plantel-stats-table .stars{
+    font-size:17px;
+    white-space:nowrap;
+  }
+  .plantel-stats-table td:nth-child(4){
+    font-size:12px;
+    line-height:1.25;
+  }
+  .plantel-stats-table .row-actions{
+    white-space:nowrap;
+    width:1%;
+  }
+  .plantel-stats-table .row-actions .btn-mini{
+    padding:6px 7px;
+  }
+  .gender-tag{font-size:9px;margin-left:3px}
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -830,15 +891,28 @@ function renderPlantel(){
       const s=jugadorEstadisticas(p);
       return `
       <tr>
-        <td>${p.name}${p.apodo?` <span class="desc" style="font-style:italic;">"${p.apodo}"</span>`:''} <span class="gender-tag ${p.gender}">${genderLabel(p.gender)}</span> ${plantelEditMode ? `<button class="gk-badge-toggle ${p.esArquero?'on':''}" onclick="toggleArquero('${p.id}')">🧤</button>` : (p.esArquero ? `<span class="gk-badge-toggle on" style="cursor:default;">🧤</span>` : '')}</td>
+        <td class="player-cell">
+          <span class="player-name-full">${p.name}${p.apodo?` <span class="desc" style="font-style:italic;">"${p.apodo}"</span>`:''}</span>
+          <span class="player-name-mobile">${p.apodo || p.name}</span>
+          <span class="gender-tag ${p.gender}">${genderLabel(p.gender)}</span>
+          ${plantelEditMode ? `<button class="gk-badge-toggle ${p.esArquero?'on':''}" onclick="toggleArquero('${p.id}')">🧤</button>` : (p.esArquero ? `<span class="gk-badge-toggle on" style="cursor:default;">🧤</span>` : '')}
+        </td>
+        <td class="mobile-stats">
+          <span><b>PJ</b> ${s.jugados}</span>
+          <span class="stat-win"><b>G</b> ${s.ganados}</span>
+          <span class="stat-draw"><b>E</b> ${s.empatados}</span>
+          <span class="stat-loss"><b>P</b> ${s.perdidos}</span>
+          <span class="stat-best"><b>⭐</b> ${s.destacados}</span>
+          <span class="stat-worst"><b>🔻</b> ${s.costaron}</span>
+        </td>
         <td>${estrellas(p.skill)}</td>
         <td>${especialLabel(p.habilidadEspecial)}</td>
-        <td class="num-stat">${s.jugados}</td>
-        <td class="num-stat stat-win">${s.ganados}</td>
-        <td class="num-stat stat-draw">${s.empatados}</td>
-        <td class="num-stat stat-loss">${s.perdidos}</td>
-        <td class="num-stat stat-best">${s.destacados}</td>
-        <td class="num-stat stat-worst">${s.costaron}</td>
+        <td class="num-stat desktop-stat">${s.jugados}</td>
+        <td class="num-stat stat-win desktop-stat">${s.ganados}</td>
+        <td class="num-stat stat-draw desktop-stat">${s.empatados}</td>
+        <td class="num-stat stat-loss desktop-stat">${s.perdidos}</td>
+        <td class="num-stat stat-best desktop-stat">${s.destacados}</td>
+        <td class="num-stat stat-worst desktop-stat">${s.costaron}</td>
         <td class="row-actions">
           <button class="btn-mini stats-mini" title="Ver estadísticas" onclick="mostrarEstadisticasJugador('${p.id}')">📊</button>
           ${plantelEditMode ? `<button class="btn-mini" title="Modificar jugador/a" onclick="editarPlayer('${p.id}')">✎</button><button class="del-icon" title="Quitar jugador/a" onclick="deletePlayer('${p.id}')">✕</button>` : ''}
@@ -868,7 +942,7 @@ function renderPlantel(){
       ${state.players.some(p=>p.active!==false) ? `
       <div class="table-scroll">
       <table class="plantel-stats-table" style="margin-top:10px;">
-        <thead><tr><th>Jugador/a</th><th>Habilidad</th><th>Especialidad</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>⭐</th><th>🔻</th><th></th></tr></thead>
+        <thead><tr><th>Jugador/a</th><th class="mobile-stats-head">Estadísticas</th><th>Habilidad</th><th>Especialidad</th><th class="desktop-stat">PJ</th><th class="desktop-stat">G</th><th class="desktop-stat">E</th><th class="desktop-stat">P</th><th class="desktop-stat">⭐</th><th class="desktop-stat">🔻</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>` : `<div class="empty">Todavía no cargaste jugadores.</div>`}
       <div class="stats-legend"><span><b>PJ</b> partidos</span><span class="stat-win"><b>G</b> ganados</span><span class="stat-draw"><b>E</b> empatados</span><span class="stat-loss"><b>P</b> perdidos</span><span class="stat-best"><b>⭐</b> destacó</span><span class="stat-worst"><b>🔻</b> costó</span></div>
