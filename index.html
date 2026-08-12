@@ -6,88 +6,7 @@
 <title>Fútbol 5 — Armado de equipos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js">
-// --- Manual team editing / drag-and-drop helpers ---
-let draggedPlayerId = null;
-
-function playerDisplayName(p){
-  if(!p) return '';
-  return p.apodo ? `${p.nombre} (${p.apodo})` : p.nombre;
-}
-
-function enableTeamDragUI(){
-  document.querySelectorAll('.player-card[draggable="true"]').forEach(card=>{
-    card.addEventListener('dragstart', e=>{
-      draggedPlayerId = card.dataset.playerId || card.dataset.id || '';
-      card.classList.add('dragging');
-      document.querySelectorAll('.team-panel,.team-box,.team').forEach(el=>el.classList.add('team-drop-active'));
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', draggedPlayerId);
-    });
-    card.addEventListener('dragend', ()=>{
-      draggedPlayerId = null;
-      card.classList.remove('dragging');
-      document.querySelectorAll('.team-panel,.team-box,.team').forEach(el=>el.classList.remove('team-drop-active'));
-      document.querySelectorAll('.player-card.drop-target').forEach(el=>el.classList.remove('drop-target'));
-    });
-    card.addEventListener('dragover', e=>e.preventDefault());
-    card.addEventListener('dragenter', e=>{
-      if((card.dataset.playerId || card.dataset.id) !== draggedPlayerId) card.classList.add('drop-target');
-    });
-    card.addEventListener('dragleave', ()=>card.classList.remove('drop-target'));
-    card.addEventListener('drop', e=>{
-      e.preventDefault();
-      card.classList.remove('drop-target');
-      const targetId = card.dataset.playerId || card.dataset.id;
-      if(draggedPlayerId && targetId && draggedPlayerId !== targetId){
-        if(typeof swapPlayersBetweenTeams === 'function') swapPlayersBetweenTeams(draggedPlayerId,targetId);
-        else if(typeof swapPlayers === 'function') swapPlayers(draggedPlayerId,targetId);
-        else if(typeof swapTeamPlayers === 'function') swapTeamPlayers(draggedPlayerId,targetId);
-      }
-    });
-  });
-}
-
-// Make both team containers valid drop targets. This also fixes the
-// "Local -> Visitor works, Visitor -> Local doesn't" asymmetry by using
-// the same event path for both sides.
-function enableTeamContainerDrops(){
-  document.querySelectorAll('.team-panel,.team-box,.team').forEach(team=>{
-    team.addEventListener('dragover', e=>{e.preventDefault(); team.classList.add('team-drop-active');});
-    team.addEventListener('dragleave', ()=>team.classList.remove('team-drop-active'));
-    team.addEventListener('drop', e=>{
-      e.preventDefault();
-      team.classList.remove('team-drop-active');
-      const targetTeam = team.dataset.team || team.dataset.side || '';
-      const id = e.dataTransfer.getData('text/plain') || draggedPlayerId;
-      if(id && targetTeam && typeof moveOrSwapDraggedPlayer === 'function'){
-        moveOrSwapDraggedPlayer(id,targetTeam);
-      }
-    });
-  });
-}
-
-// Explicit confirmation for manual edits. It persists the current in-memory
-// state locally and gives the user visual confirmation without exporting.
-function saveManualChangesLocally(){
-  try{
-    if(typeof state !== 'undefined'){
-      localStorage.setItem('futbol5_state', JSON.stringify(state));
-    } else if(typeof saveState === 'function'){
-      saveState();
-    }
-    const el=document.getElementById('manualSaveStatus');
-    if(el){
-      el.textContent='✓ Cambios manuales guardados localmente';
-      el.style.display='block';
-      setTimeout(()=>el.style.display='none',3500);
-    }
-  }catch(err){
-    alert('No se pudieron guardar los cambios localmente.');
-  }
-}
-
-</script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
   :root{
     --verde-cancha:#1F6B3F;
@@ -185,9 +104,6 @@ function saveManualChangesLocally(){
   .stat .l{font-size:11.5px;text-transform:uppercase;letter-spacing:0.06em;color:rgba(245,242,233,0.7);}
   .pending-kpi{background:rgba(210,168,77,0.16);border-color:rgba(210,168,77,0.5);}
   .pending-kpi .n{color:#E8C96A;}
-  .pending-kpi-btn{cursor:pointer;text-align:left;color:inherit;font:inherit;transition:transform .12s,background .12s;}
-  .pending-kpi-btn:hover{background:rgba(210,168,77,0.24);transform:translateY(-1px);}
-  .pending-kpi-action{font-size:11px;margin-top:5px;color:#F3D98A;font-weight:700;}
 
   table{width:100%;border-collapse:collapse;font-size:14px;}
   th{
@@ -330,198 +246,59 @@ function saveManualChangesLocally(){
   .btn-mini{border:1px solid #c9c2ae;background:#fffdf6;border-radius:7px;padding:4px 7px;margin-right:4px;cursor:pointer;font-weight:700;}
   .btn-mini:hover{background:#eee8d8;}
 </style>
-
-<style>
-/* Drag & drop: visible, touch-friendly feedback */
-.team-player[draggable="true"]{
-  cursor:grab;
-  position:relative;
-  transition:transform .16s ease, box-shadow .16s ease, opacity .16s ease, border-color .16s ease, background .16s ease;
-  user-select:none;
-}
-.team-player.dragging{
-  opacity:.62;
-  transform:translateY(-5px) scale(1.035) rotate(1deg);
-  box-shadow:0 16px 30px rgba(0,0,0,.22);
-  border-color:#7c3aed !important;
-  z-index:20;
-}
-.team-player.drop-target{
-  transform:translateY(-2px) scale(1.035);
-  box-shadow:0 0 0 3px rgba(124,58,237,.24), 0 12px 24px rgba(0,0,0,.16);
-  border-color:#7c3aed !important;
-  background:#f5f0ff !important;
-}
-.team-player.drop-target::after{
-  content:"Soltar aquí";
-  position:absolute;
-  right:8px;
-  top:-10px;
-  background:#7c3aed;
-  color:white;
-  font-size:10px;
-  font-weight:800;
-  padding:3px 7px;
-  border-radius:999px;
-  box-shadow:0 4px 10px rgba(124,58,237,.25);
-}
-.team-col.drag-over{
-  background:rgba(124,58,237,.045);
-  outline:2px dashed rgba(124,58,237,.5);
-  outline-offset:5px;
-  border-radius:14px;
-}
-.drag-hint{
-  font-size:.84rem;
-  color:#5b6472;
-  margin:.45rem 0 .8rem;
-  background:#f7f5ff;
-  border:1px solid #e5ddff;
-  padding:.55rem .7rem;
-  border-radius:10px;
-}
-.manual-actions{
-  display:flex;
-  flex-wrap:wrap;
-  gap:.55rem;
-  margin-top:14px;
-  padding-top:12px;
-  border-top:1px solid #e6e0d1;
-}
-.manual-actions button{min-height:42px}
-.manual-saved{
-  display:none;
-  font-size:.85rem;
-  color:#166534;
-  background:#f0fdf4;
-  border:1px solid #bbf7d0;
-  padding:.55rem .7rem;
-  border-radius:10px;
-  margin-top:.55rem;
-}
-@media (max-width:600px){
-  .manual-actions{flex-direction:column}
-  .manual-actions button{width:100%}
-}
+<style id="specialty-ui">
+.specialty-help{display:flex;gap:10px;align-items:flex-start;margin:10px 0 14px;padding:12px 14px;border-radius:12px;background:rgba(242,184,75,.10);border:1px solid rgba(242,184,75,.35)}
+.specialty-help span{color:#5f665f;font-size:.9rem;line-height:1.4}
+.specialty-example-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.specialty-example-grid>div{padding:12px;border:1px solid rgba(18,64,43,.12);border-radius:12px;background:#fff;line-height:1.35}
+.specialty-example-grid span{font-size:.84rem;color:#6b7280}
+@media(max-width:700px){.specialty-example-grid{grid-template-columns:1fr}}
+</style><style id="new-specialty-field">
+.new-specialty-field select{min-width:180px}
+@media(max-width:700px){.new-specialty-field{width:100%;max-width:none!important}.new-specialty-field select{width:100%}}
 </style>
-
-
-<style id="plantel-transfer-style">
-.plantel-transfer{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 6px}
-.plantel-transfer .btn{min-height:40px}
-.plantel-transfer-status{font-size:.85rem;color:#166534;margin-top:7px}
-</style>
-
-
-<style id="inline-plantel-edit-style">
-.player-edit-row input,.player-edit-row select{width:100%;box-sizing:border-box;min-width:110px}
-.player-edit-row .edit-grid{display:grid;gap:6px}
-.player-edit-row .edit-skill{grid-template-columns:95px auto;align-items:center}
-.player-edit-row .edit-actions{white-space:nowrap}
-.player-edit-row .btn-mini{padding:7px 10px}
-@media(max-width:700px){
-  .player-edit-row input,.player-edit-row select{min-width:130px}
-  .player-edit-row .edit-grid{min-width:180px}
-}
-</style>
-
-<style id="plantel-editor-clean-style">
-.player-editor-panel{
-  margin:16px 0 18px;
-  padding:18px;
-  border:1px solid rgba(18,64,43,.18);
-  border-radius:16px;
-  background:#fffdf7;
-}
-.editor-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}
-.editor-header h3{margin:0 0 4px}
-.editor-select-wrap{max-width:460px;margin-bottom:18px}
-.editor-select-wrap select{width:100%;min-height:44px}
-.editor-form{
+<style id="player-add-layout-fix">
+.player-add-row{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:14px;
+  grid-template-columns:minmax(0,1.25fr) minmax(0,1.25fr) minmax(105px,.85fr) minmax(115px,.9fr) minmax(125px,.95fr) minmax(170px,1.35fr) auto;
+  gap:12px;
+  align-items:end;
+  width:100%;
 }
-.editor-field label{display:block;font-weight:700;margin-bottom:6px}
-.editor-field input,.editor-field select{width:100%;box-sizing:border-box;min-height:44px}
-.skill-editor{display:flex;align-items:center;gap:12px}
-.skill-editor input{max-width:130px}
-.skill-editor span{white-space:nowrap}
-.editor-footer{margin-top:18px;padding-top:14px;border-top:1px solid rgba(18,64,43,.12);display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between}
-.edit-save-status{width:100%;font-weight:700;color:#166534}
-@media(max-width:700px){
-  .editor-form{grid-template-columns:1fr}
-  .editor-header{align-items:flex-start}
-  .editor-footer{display:block}
-  .editor-footer>div:not(.edit-save-status){margin-top:10px}
-  .editor-footer button{width:100%;margin-top:8px}
+.player-add-row > div{
+  min-width:0!important;
+  max-width:none!important;
+  width:auto!important;
 }
-</style>
-
-<style id="plantel-edit-v3-style">
-.plantel-edit-actions{width:72px;text-align:center}
-.plantel-edit-actions .del-icon{margin:auto}
-</style>
-
-
-<style id="team-player-stars-only">
-.team-player-skill{display:inline-flex;align-items:center;justify-content:flex-end;min-width:86px;white-space:nowrap}
-</style>
-
-<style id="teams-balanced-dnd-v5">
-.teams-wrap{align-items:stretch}
-.team-col{display:flex;flex-direction:column}
-.team-col ul{display:grid;grid-auto-rows:minmax(48px,auto);align-content:start;flex:0 0 auto}
-.team-col li.team-player{
-  min-height:48px;
+.player-add-row input,
+.player-add-row select{
+  width:100%;
+  min-width:0;
   box-sizing:border-box;
-  padding:8px 4px;
-  margin:0;
 }
-.team-col .total{margin-top:auto;padding-top:10px}
-.team-player.dragging{
-  opacity:.42;
-  transform:scale(.98);
-  box-shadow:0 14px 28px rgba(0,0,0,.25);
+.player-add-row .btn{
+  white-space:nowrap;
 }
-.team-player.drop-target{
-  background:rgba(242,184,75,.24)!important;
-  outline:3px solid #F2B84B!important;
-  outline-offset:-3px;
-  transform:scale(1.025);
-  box-shadow:0 0 0 5px rgba(242,184,75,.14),0 10px 22px rgba(0,0,0,.16);
-  z-index:4;
+@media(max-width:1050px){
+  .player-add-row{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .player-add-row > div:last-child{
+    grid-column:1 / -1;
+    justify-self:start;
+  }
 }
-.team-player.drop-target::after{
-  content:"↔ Intercambiar";
-  position:absolute;
-  right:8px;
-  top:50%;
-  transform:translateY(-50%);
-  background:#F2B84B;
-  color:#173A2A;
-  font-size:10px;
-  font-weight:900;
-  padding:4px 7px;
-  border-radius:999px;
-  box-shadow:0 4px 10px rgba(0,0,0,.15);
-  pointer-events:none;
-  animation:targetPulse .75s ease-in-out infinite alternate;
-}
-@keyframes targetPulse{
-  from{filter:brightness(.96);box-shadow:0 4px 10px rgba(0,0,0,.12)}
-  to{filter:brightness(1.08);box-shadow:0 0 0 5px rgba(242,184,75,.20),0 7px 15px rgba(0,0,0,.18)}
-}
-.team-col.drag-over{
-  background:rgba(242,184,75,.055);
-  outline:2px dashed rgba(242,184,75,.65);
-  outline-offset:5px;
-}
-.drag-hint strong{color:#173A2A}
-@media(max-width:560px){
-  .team-col ul{grid-auto-rows:minmax(52px,auto)}
-  .team-col li.team-player{min-height:52px}
-  .team-player.drop-target::after{font-size:9px;right:4px}
+@media(max-width:700px){
+  .player-add-row{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .player-add-row > div:last-child{
+    grid-column:auto;
+  }
+  .player-add-row .btn{
+    width:100%;
+  }
 }
 </style>
 </head>
@@ -533,13 +310,11 @@ function saveManualChangesLocally(){
     <p class="subtitle">Cargá el plantel, definí las reglas y generá equipos parejos en segundos. Después de jugar, un solo click carga el resultado y ajusta la habilidad de cada jugador.</p>
     <div class="stats-row" id="statsRow"></div>
     <div class="data-bar">
-      <button class="btn secondary small" onclick="document.getElementById('excelInput').click()">📥 Cargar Excel integral</button>
+      <button class="btn secondary small" onclick="document.getElementById('excelInput').click()">📥 Importar Excel</button>
       <button class="btn secondary small" onclick="crearBaseDesdeCero()">➕ Nueva base desde 0</button>
-      <button class="btn secondary small" onclick="document.getElementById('plantelInputInicial').click()">👥 Cargar solo plantel</button>
       <button class="btn small" onclick="exportarExcel()">📤 Descargar Excel</button>
       <input id="excelInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
-      <input id="plantelInputInicial" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarPlantel(event)">
-      <span id="dataStatus" class="data-status">Elegí cargar un Excel integral, solo el plantel o crear una base desde 0</span>
+      <span id="dataStatus" class="data-status">Elegí importar un Excel o crear una base desde 0</span>
     </div>
     <div id="saveToast" class="save-toast" role="status"></div>
   </header>
@@ -548,7 +323,6 @@ function saveManualChangesLocally(){
     <button data-tab="plantel" class="active">🏠 Inicio</button>
     <button data-tab="armar">Armar partido</button>
     <button data-tab="resultado">Cargar resultado</button>
-
     <button data-tab="historial">Historial</button>
     <button data-tab="reglas">Reglas</button>
   </nav>
@@ -581,27 +355,26 @@ function numeroARating(v){ return Number(v||0).toLocaleString('es-AR',{minimumFr
 // Este factor queda centralizado para poder calibrarlo con el historial real.
 const FACTOR_COMPETITIVO_MUJER = 0.80;
 const HABILIDADES_ESPECIALES = [
-  {value:'', label:'Sin especialidad', bonus:0},
-  {value:'goleador', label:'Goleador/a', bonus:0.35},
-  {value:'defensor', label:'Defensor/a', bonus:0.35},
-  {value:'corredor', label:'Corredor/a', bonus:0.30},
-  {value:'todoterreno', label:'Todo terreno', bonus:0.45},
-  {value:'arquero', label:'Arquero', bonus:0.30},
-  {value:'pase', label:'Pase de primera', bonus:0.30}
+  {value:'', label:'Sin especialidad', ataque:0, defensa:0, movimiento:0, creacion:0},
+  {value:'goleador', label:'⚽ Goleador/a', ataque:0.30, defensa:0, movimiento:0.05, creacion:0.05},
+  {value:'defensor', label:'🛡️ Defensor/a', ataque:0, defensa:0.30, movimiento:0.05, creacion:0},
+  {value:'corredor', label:'🏃 Corredor/a', ataque:0.05, defensa:0.05, movimiento:0.30, creacion:0},
+  {value:'todoterreno', label:'🔄 Todo terreno', ataque:0.15, defensa:0.15, movimiento:0.15, creacion:0.15},
+  {value:'pase', label:'👟 Pase de primera', ataque:0.05, defensa:0, movimiento:0.05, creacion:0.30}
 ];
+function especialData(p){
+  return HABILIDADES_ESPECIALES.find(e=>e.value===(p.habilidadEspecial||'')) || HABILIDADES_ESPECIALES[0];
+}
 function especialLabel(v){
   const x=HABILIDADES_ESPECIALES.find(e=>e.value===v);
   return x ? x.label : 'Sin especialidad';
 }
-function especialBonus(p){
-  const x=HABILIDADES_ESPECIALES.find(e=>e.value===p.habilidadEspecial);
-  return x ? x.bonus : 0;
-}
-
 function habilidadCompetitiva(p){
   const raw = Number(p.skill) || 0;
   const base = p.gender === 'F' ? raw * FACTOR_COMPETITIVO_MUJER : raw;
-  return base + especialBonus(p);
+  const e = especialData(p);
+  const perfil = (e.ataque + e.defensa + e.movimiento + e.creacion) / 4;
+  return base + perfil;
 }
 
 function ratingCompact(skill){
@@ -677,14 +450,10 @@ function mostrarInicioBase(){
       <h2>⚽ Empezá tu base de Fútbol 5</h2>
       <p class="desc">Podés continuar desde un Excel existente o arrancar una base completamente nueva desde cero.</p>
       <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px;">
-        <button class="btn" onclick="document.getElementById('excelInput').click()">📥 Cargar Excel integral</button>
-        <button class="btn secondary" onclick="document.getElementById('plantelInputInicial').click()">👥 Cargar solo plantel</button>
+        <button class="btn" onclick="document.getElementById('excelInput').click()">📥 Cargar Excel existente</button>
         <button class="btn secondary" onclick="crearBaseDesdeCero()">➕ Armar base desde 0</button>
       </div>
-      <p class="desc" style="margin-top:18px;">
-        <b>Excel integral:</b> recupera plantel, partidos, pendientes, reglas e historial.<br>
-        <b>Solo plantel:</b> carga únicamente jugadores, habilidades y datos actuales del plantel; no trae partidos ni historial.
-      </p>
+      <p class="desc" style="margin-top:18px;">El Excel contiene la historia completa. Cuando cargues el primer partido, vas a poder descargar la base como <b>Partido 1</b> y compartirla con otro administrador.</p>
       <div class="msg ok" style="margin-top:12px;">💾 Mientras trabajás, la web guarda automáticamente una copia local en este dispositivo. El Excel sigue siendo el archivo para compartir o respaldar.</div>
     </div>`;
 }
@@ -891,29 +660,6 @@ function exportarExcel(){
 
 function uid(){ return 'p_' + Math.random().toString(36).slice(2,9); }
 
-function abrirPendientesDesdeKpi(){
-  const pendientes=partidosPendientes();
-  if(!pendientes.length){ renderStats(); return; }
-  if(pendientes.length===1){
-    verPartidoPendiente(pendientes[0].id);
-  }else{
-    switchTab('historial');
-    setTimeout(()=>{
-      const el=document.getElementById('pendientesHistorial');
-      if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-    },50);
-  }
-}
-
-function verPartidoPendiente(id){
-  const m=obtenerPartidoPendiente(id);
-  if(!m) return;
-  sincronizarLastTeamsConPartido(m);
-  saveState();
-  switchTab('armar');
-  renderEditorEquipos();
-}
-
 function renderStats(){
   const activos = state.players.filter(p=>p.active!==false);
   const totalJugadores = activos.length;
@@ -921,7 +667,7 @@ function renderStats(){
   const mujeres = activos.filter(p=>p.gender==='F').length;
   const varones = activos.filter(p=>p.gender==='M').length;
   const pendientes = partidosPendientes();
-  const kpiPendiente = pendientes.length ? `<button class="stat pending-kpi pending-kpi-btn" onclick="abrirPendientesDesdeKpi()" title="Ver ${pendientes.length>1?'partidos pendientes':'partido pendiente'}"> <div class="n">${pendientes.length}</div><div class="l">Partido${pendientes.length>1?'s':''} pendiente${pendientes.length>1?'s':''}</div><div class="pending-kpi-action">Ver ${pendientes.length>1?'pendientes →':'equipos →'}</div></button>` : '';
+  const kpiPendiente = pendientes.length ? `<div class="stat pending-kpi"><div class="n">${pendientes.length}</div><div class="l">Partido${pendientes.length>1?'s':''} pendiente${pendientes.length>1?'s':''}</div></div>` : '';
   document.getElementById('statsRow').innerHTML = `
     <div class="stat"><div class="n">${totalJugadores}</div><div class="l">Jugadores</div></div>
     <div class="stat"><div class="n">${mujeres}</div><div class="l">Mujeres</div></div>
@@ -933,251 +679,93 @@ function renderStats(){
 
 /* ---------- TAB: PLANTEL ---------- */
 let plantelEditMode = false;
-function togglePlantelEdit(){ plantelEditMode = !plantelEditMode; if(!plantelEditMode) jugadorEditandoId=null; renderPlantel(); }
-
-
-let jugadorEditandoId = null;
-
-function seleccionarJugadorEdicion(id){
-  jugadorEditandoId = id || null;
-  renderPlantel();
-  setTimeout(()=>{
-    const el=document.getElementById('editorJugador');
-    if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});
-  },30);
-}
-
-function cancelarEdicionJugador(){
-  jugadorEditandoId=null;
-  renderPlantel();
-}
+function togglePlantelEdit(){ plantelEditMode = !plantelEditMode; renderPlantel(); }
 
 function renderPlantel(){
-  const activos = state.players.filter(p=>p.active!==false);
-  const sorted = activos.slice().sort((a,b)=>b.skill-a.skill);
-  const seleccionado = jugadorEditandoId ? state.players.find(p=>p.id===jugadorEditandoId) : null;
-
-  const rows = sorted.map(p=>`
-    <tr>
-      <td>
-        <strong>${escapeHtml(p.name)}</strong>
-        ${p.apodo?` <span class="desc" style="font-style:italic;">"${escapeHtml(p.apodo)}"</span>`:''}
-        <span class="gender-tag ${p.gender}">${genderLabel(p.gender)}</span>
-        ${p.esArquero?` <span class="gk-badge-toggle on" style="cursor:default;">🧤</span>`:''}
-      </td>
-      <td>${estrellas(p.skill)}</td>
-      <td>${especialLabel(p.habilidadEspecial)}</td>
-      <td>${p.matchesPlayed||0}</td>
-      <td>
-        ${plantelEditMode?`<button class="del-icon" title="Quitar jugador/a" onclick="deletePlayer('${p.id}')">✕</button>`:''}
-      </td>
-    </tr>
-  `).join('');
-
-  let editorHtml='';
-  if(plantelEditMode){
-    editorHtml=`
-      <div class="player-editor-panel" id="editorJugador">
-        <div class="editor-header">
-          <div>
-            <h3>Modificar jugador/a</h3>
-            <p class="desc">Seleccioná un jugador de la lista. La edición se hace únicamente desde este panel; los cambios se guardan por jugador.</p>
-          </div>
-          <button class="edit-link" onclick="cancelarEdicionJugador()">Cerrar</button>
-        </div>
-
-        <div class="editor-select-wrap">
-          <label>Jugador/a a modificar</label>
-          <select id="jugadorEditarSelect" onchange="seleccionarJugadorEdicion(this.value)">
-            <option value="">Seleccioná un jugador/a...</option>
-            ${sorted.map(p=>`<option value="${p.id}" ${p.id===jugadorEditandoId?'selected':''}>${escapeHtml(nombreVisible(p))}</option>`).join('')}
-          </select>
-        </div>
-
-        ${seleccionado ? `
-        <div class="editor-form">
-          <div class="editor-field">
-            <label>Nombre</label>
-            <input id="editName_${seleccionado.id}" value="${escapeHtmlAttr(seleccionado.name)}">
-          </div>
-          <div class="editor-field">
-            <label>Apodo</label>
-            <input id="editApodo_${seleccionado.id}" value="${escapeHtmlAttr(seleccionado.apodo||'')}">
-          </div>
-          <div class="editor-field">
-            <label>Puntaje / habilidad</label>
-            <div class="skill-editor">
-              <input type="number" id="editSkill_${seleccionado.id}" min="1" max="10" step="0.5" value="${Number(seleccionado.skill).toFixed(1)}">
-              <span id="editStars_${seleccionado.id}">${estrellas(seleccionado.skill)}</span>
-            </div>
-          </div>
-          <div class="editor-field">
-            <label>Habilidad especial</label>
-            <select id="editEspecial_${seleccionado.id}">
-              ${HABILIDADES_ESPECIALES.map(e=>`<option value="${e.value}" ${e.value===(seleccionado.habilidadEspecial||'')?'selected':''}>${e.label}</option>`).join('')}
-            </select>
-          </div>
-          <div class="editor-field">
-            <label>Género</label>
-            <select id="editGender_${seleccionado.id}">
-              <option value="F" ${seleccionado.gender==='F'?'selected':''}>Mujer</option>
-              <option value="M" ${seleccionado.gender==='M'?'selected':''}>Varón</option>
-            </select>
-          </div>
-          <div class="editor-field">
-            <label>Arquero/a</label>
-            <select id="editArquero_${seleccionado.id}">
-              <option value="no" ${!seleccionado.esArquero?'selected':''}>No</option>
-              <option value="si" ${seleccionado.esArquero?'selected':''}>Sí</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="editor-footer">
-          <span class="desc">Partidos jugados: <strong>${seleccionado.matchesPlayed||0}</strong> · Este dato es histórico y no se edita.</span>
-          <div>
-            <button class="btn secondary" onclick="cancelarEdicionJugador()">Cancelar</button>
-            <button class="btn" onclick="guardarEdicionPlayer('${seleccionado.id}')">✓ Guardar cambios</button>
-          </div>
-          <div id="editSaveStatus" class="edit-save-status"></div>
-        </div>
-        ` : `
-          <div class="empty">Elegí un jugador para modificar sus datos.</div>
-        `}
-      </div>
-    `;
-  }
+  const rows = state.players.filter(p=>p.active!==false)
+    .slice()
+    .sort((a,b)=>b.skill-a.skill)
+    .map(p=>`
+      <tr>
+        <td>${p.name}${p.apodo?` <span class="desc" style="font-style:italic;">"${p.apodo}"</span>`:''} <span class="gender-tag ${p.gender}">${genderLabel(p.gender)}</span> ${plantelEditMode ? `<button class="gk-badge-toggle ${p.esArquero?'on':''}" onclick="toggleArquero('${p.id}')">🧤</button>` : (p.esArquero ? `<span class="gk-badge-toggle on" style="cursor:default;">🧤</span>` : '')}</td>
+        <td>${estrellas(p.skill)}</td>
+        <td>${p.matchesPlayed||0}</td>
+        <td>${plantelEditMode ? `<button class="btn-mini" title="Modificar jugador/a" onclick="editarPlayer('${p.id}')">✎</button><button class="del-icon" title="Quitar jugador/a" onclick="deletePlayer('${p.id}')">✕</button>` : ''}</td>
+      </tr>
+    `).join('');
 
   document.getElementById('content').innerHTML = `
     <div class="card">
       <h2>Agregar jugador/a</h2>
-      <p class="desc">El puntaje inicial es una estimación tuya de 1 a 10. Este número queda oculto y se muestra con hasta 5 estrellas, incluyendo medias estrellas. Se va a ir ajustando después de cada partido.</p>
-      <div class="row">
-        <div><label>Nombre</label><input type="text" id="newName" placeholder="Ej: Camila"></div>
-        <div><label>Apodo (opcional)</label><input type="text" id="newApodo" placeholder="Ej: Cami"></div>
-        <div style="max-width:110px;"><label>Género</label><select id="newGender"><option value="F">Mujer</option><option value="M">Varón</option></select></div>
-        <div style="max-width:110px;"><label>Puntaje inicial (1-10)</label><input type="number" id="newSkill" min="1" max="10" step="0.5" value="6"></div>
-        <div style="max-width:140px;"><label>¿Arquero?</label><select id="newArquero"><option value="no">No</option><option value="si">Sí</option></select></div>
-        <div style="max-width:180px;"><label>Habilidad especial</label><select id="newEspecial">${HABILIDADES_ESPECIALES.map(e=>`<option value="${e.value}">${e.label}</option>`).join('')}</select></div>
-        <div style="max-width:140px;"><button class="btn" onclick="addPlayer()">Agregar</button></div>
+      <p class="desc"><div class="specialty-help"><strong>🎯 Habilidad especial</strong><span>Elegí la característica que mejor representa cómo juega habitualmente. Complementa la ⭐ habilidad general y tiene un peso menor en el armado.</span></div><p class="desc">El puntaje inicial es una estimación tuya de 1 a 10. Este número queda oculto y se muestra con hasta 5 estrellas, incluyendo medias estrellas. Se va a ir ajustando solo después de cada partido.</p>
+      <div class="row player-add-row">
+        <div>
+          <label>Nombre</label>
+          <input type="text" id="newName" placeholder="Ej: Camila">
+        </div>
+        <div>
+          <label>Apodo (opcional)</label>
+          <input type="text" id="newApodo" placeholder="Ej: Cami">
+        </div>
+        <div style="max-width:110px;">
+          <label>Género</label>
+          <select id="newGender">
+            <option value="F">Mujer</option>
+            <option value="M">Varón</option>
+          </select>
+        </div>
+        <div style="max-width:110px;">
+          <label>Puntaje inicial (1-10)</label>
+          <input type="number" id="newSkill" min="1" max="10" step="0.5" value="6">
+        </div>
+        <div style="max-width:140px;">
+          <label>¿Arquero?</label>
+          <select id="newArquero">
+            <option value="no">No</option>
+            <option value="si">Sí</option>
+          </select>
+        </div>
+        <div class="new-specialty-field" style="max-width:190px;">
+          <label>Habilidad especial</label>
+          <select id="newEspecial">
+            ${HABILIDADES_ESPECIALES.map(e=>`<option value="${e.value}">${e.label}</option>`).join('')}
+          </select>
+        </div>
+        <div style="max-width:140px;">
+          <button class="btn" onclick="addPlayer()">Agregar</button>
+        </div>
       </div>
     </div>
 
     <div class="card">
-      <h2>Plantel (${activos.length})</h2>
-      <div class="plantel-transfer">
-        <button class="btn secondary small" onclick="document.getElementById('plantelInput').click()">📥 Cargar plantel</button>
-        <input id="plantelInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarPlantel(event)">
-        <button class="btn small" onclick="exportarPlantel()">📤 Exportar plantel</button>
-      </div>
-      <div id="plantelTransferStatus" class="plantel-transfer-status"></div>
-      <p class="desc">Ordenado por habilidad. Activá la edición y elegí arriba qué jugador querés modificar.</p>
-      <button class="edit-link" onclick="togglePlantelEdit()">${plantelEditMode ? 'Ocultar edición' : '✎ Editar plantel'}</button>
-      ${editorHtml}
-      ${activos.length ? `
-      <div style="overflow-x:auto;">
-        <table style="margin-top:10px;">
-          <thead><tr><th>Jugador/a</th><th>Habilidad</th><th>Especialidad</th><th>Partidos</th><th>${plantelEditMode ? "Acciones" : ""}</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>` : `<div class="empty">Todavía no cargaste jugadores.</div>`}
+      <h2>Plantel (${state.players.filter(p=>p.active!==false).length})</h2>
+      <p class="desc">Ordenado por habilidad. Los controles de arquero, modificar y quitar jugador/a aparecen solo en modo edición.</p>
+      <button class="edit-link" onclick="togglePlantelEdit()">${plantelEditMode ? 'Ocultar edición' : 'Editar plantel (modificar / quitar / marcar arquero)'}</button>
+      ${state.players.some(p=>p.active!==false) ? `
+      <table style="margin-top:10px;">
+        <thead><tr><th>Jugador/a</th><th>Habilidad</th><th>Especialidad</th><th>Partidos</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>` : `<div class="empty">Todavía no cargaste jugadores.</div>`}
     </div>
 
-    ${activos.length ? `
-    <div class="card">
+    ${state.players.some(p=>p.active!==false) ? `
+    <div class="card specialty-examples"><h3>💡 Ejemplos de cómo se usa</h3><p class="desc">La habilidad ⭐ sigue siendo el factor principal. La especialidad aporta un pequeño perfil; no reemplaza ni cambia el puntaje del jugador.</p><div class="specialty-example-grid">
+<div><b>⭐ 8,5 + ⚽ Goleador/a</b><br><span>Mayor aporte ofensivo.</span></div>
+<div><b>⭐ 8,5 + 🛡️ Defensor/a</b><br><span>Mayor aporte defensivo.</span></div>
+<div><b>⭐ 8,5 + 🏃 Corredor/a</b><br><span>Mayor aporte de recorrido.</span></div>
+<div><b>⭐ 8,5 + 🔄 Todo terreno</b><br><span>Aporte equilibrado.</span></div>
+<div><b>⭐ 8,5 + 👟 Pase de primera</b><br><span>Mayor aporte de creación.</span></div>
+<div><b>⭐ 8,5 + Sin especialidad</b><br><span>Se considera principalmente la habilidad.</span></div>
+</div></div><div class="card">
       <h2>Evolución de habilidad</h2>
       <p class="desc">Elegí un jugador o jugadora para ver cómo fue cambiando su habilidad partido a partido.</p>
       <div class="row">
-        <div style="max-width:260px;"><select id="evoSelect">${activos.map(p=>`<option value="${p.id}">${escapeHtml(nombreVisible(p))}</option>`).join('')}</select></div>
+        <div style="max-width:260px;"><select id="evoSelect">${state.players.filter(p=>p.active!==false).map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('')}</select></div>
         <div style="max-width:140px;"><button class="btn secondary" onclick="mostrarEvolucion()">Ver gráfico</button></div>
       </div>
       <div id="evoChart"></div>
     </div>` : ''}
   `;
-
-  if(seleccionado){
-    const skillInput=document.getElementById(`editSkill_${seleccionado.id}`);
-    if(skillInput){
-      skillInput.addEventListener('input',()=>{
-        const v=Math.max(1,Math.min(10,parseFloat(String(skillInput.value).replace(',','.'))||1));
-        const stars=document.getElementById(`editStars_${seleccionado.id}`);
-        if(stars) stars.innerHTML=estrellas(v);
-      });
-    }
-  }
-}
-
-function escapeHtml(v){
-  return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function escapeHtmlAttr(v){
-  return escapeHtml(v).replace(/"/g,'&quot;');
-}
-
-function guardarEdicionPlayer(id){
-  const p = state.players.find(x=>x.id===id);
-  if(!p) return;
-
-  const nameEl=document.getElementById(`editName_${id}`);
-  const apodoEl=document.getElementById(`editApodo_${id}`);
-  const genderEl=document.getElementById(`editGender_${id}`);
-  const arqueroEl=document.getElementById(`editArquero_${id}`);
-  const skillEl=document.getElementById(`editSkill_${id}`);
-  const especialEl=document.getElementById(`editEspecial_${id}`);
-
-  if(!nameEl || !skillEl) return;
-
-  const name=nameEl.value.trim();
-  const apodo=apodoEl.value.trim();
-  const gender=genderEl.value;
-  const esArquero=arqueroEl.value==='si';
-  const skill=parseFloat(String(skillEl.value).replace(',','.'));
-  const especial=especialEl.value;
-
-  if(!name){ alert('El nombre no puede quedar vacío.'); return; }
-  if(!Number.isFinite(skill) || skill<1 || skill>10){ alert('El puntaje debe estar entre 1 y 10.'); return; }
-
-  const duplicado=state.players.some(x=>x.id!==id && x.active!==false &&
-    String(x.name||'').toLowerCase()===name.toLowerCase() &&
-    String(x.apodo||'').toLowerCase()===apodo.toLowerCase()
-  );
-  if(duplicado){ alert('Ya existe otro jugador con ese nombre y ese apodo.'); return; }
-
-  const teniaPartidos=(p.matchesPlayed||0)>0 || state.matches.some(m=>
-    (m.teamAIds||[]).includes(id)||(m.teamBIds||[]).includes(id)
-  );
-
-  p.name=name;
-  p.apodo=apodo;
-  p.gender=gender;
-  p.esArquero=esArquero;
-  p.skill=Math.min(10,Math.max(1,skill));
-  p.habilidadEspecial=especial;
-
-  if(!teniaPartidos){
-    if(!Array.isArray(p.skillHistory) || !p.skillHistory.length){
-      p.skillHistory=[{date:new Date().toISOString(),skill:p.skill,label:'Inicial'}];
-    }else{
-      p.skillHistory[0].skill=p.skill;
-    }
-  }
-
-  // Persistencia real: guardar antes de volver a renderizar.
-  guardarEstadoLocal();
-
-  const status=document.getElementById('editSaveStatus');
-  if(status){
-    status.textContent='✓ Cambios guardados localmente';
-  }
-
-  // Keep the selected player open so the user sees the saved values.
-  renderPlantel();
-  renderStats();
-
-  setTimeout(()=>{
-    const s=document.getElementById('editSaveStatus');
-    if(s) s.textContent='✓ Cambios guardados localmente';
-  },30);
 }
 
 function addPlayer(){
@@ -1196,7 +784,7 @@ function addPlayer(){
   }
   const skillClamp = Math.min(10,Math.max(1,skill));
   state.players.push({
-    id:uid(), name, apodo, gender, skill:skillClamp, habilidadEspecial, matchesPlayed:0, active:true, esArquero,
+    id:uid(), name, apodo, gender, skill:skillClamp, matchesPlayed:0, active:true, esArquero, habilidadEspecial,
     skillHistory: [{date: new Date().toISOString(), skill: skillClamp}]
   });
   saveState();
@@ -1247,6 +835,48 @@ function toggleArquero(id){
   if(p){ p.esArquero = !p.esArquero; saveState(); renderPlantel(); }
 }
 
+function editarPlayer(id){
+  const p = state.players.find(x=>x.id===id);
+  if(!p) return;
+  const name = prompt('Nombre', p.name);
+  if(name===null) return;
+  const nombreNuevo=name.trim();
+  if(!nombreNuevo){ alert('El nombre no puede quedar vacío.'); return; }
+  const apodo = prompt('Apodo (opcional)', p.apodo||'');
+  if(apodo===null) return;
+  const apodoNuevo=apodo.trim();
+  const genderInput=prompt('Género: escribí M para varón o F para mujer', p.gender);
+  if(genderInput===null) return;
+  const genderNuevo=genderInput.trim().toUpperCase();
+  if(!['M','F'].includes(genderNuevo)){ alert('El género debe ser M o F.'); return; }
+  const skillInput=prompt('Puntaje actual (1 a 10)', String(p.skill));
+  if(skillInput===null) return;
+  const skillNuevo=parseFloat(String(skillInput).replace(',','.'));
+  if(!Number.isFinite(skillNuevo) || skillNuevo<1 || skillNuevo>10){ alert('El puntaje debe estar entre 1 y 10.'); return; }
+  const arqueroInput=prompt('¿Arquero? escribí SI o NO', p.esArquero?'SI':'NO');
+  if(arqueroInput===null) return;
+  const arqueroNuevo=arqueroInput.trim().toUpperCase();
+  if(!['SI','NO'].includes(arqueroNuevo)){ alert('Escribí SI o NO.'); return; }
+
+  const duplicado=state.players.some(x=>x.id!==id && x.active!==false && x.name.toLowerCase()===nombreNuevo.toLowerCase() && (x.apodo||'').toLowerCase()===apodoNuevo.toLowerCase());
+  if(duplicado){ alert('Ya existe otro jugador con ese nombre y ese apodo.'); return; }
+
+  const teniaPartidos=(p.matchesPlayed||0)>0 || state.matches.some(m=>(m.teamAIds||[]).includes(id)||(m.teamBIds||[]).includes(id));
+  p.name=nombreNuevo;
+  p.apodo=apodoNuevo;
+  p.gender=genderNuevo;
+  p.esArquero=arqueroNuevo==='SI';
+  p.skill=Math.min(10,Math.max(1,skillNuevo));
+  // Si todavía no jugó, corregimos también el punto inicial del historial.
+  // Si ya jugó, conservamos la evolución histórica y aplicamos el cambio al rating actual.
+  if(!teniaPartidos){
+    if(!p.skillHistory || !p.skillHistory.length) p.skillHistory=[{date:new Date().toISOString(),skill:p.skill,label:'Inicial'}];
+    else p.skillHistory[0].skill=p.skill;
+  }
+  saveState();
+  renderPlantel(); renderStats();
+}
+
 function deletePlayer(id){
   const p = state.players.find(x=>x.id===id);
   if(!p) return;
@@ -1275,7 +905,7 @@ function renderReglas(){
 
   document.getElementById('content').innerHTML = `
     <div class="card">
-      <h2>Regla fija: distribución femenina</h2>
+      <h2>Regla fija: reparto de mujeres</h2>
       <p class="desc">Se aplica automáticamente: el sistema busca una composición equilibrada entre ambos equipos y, cuando la cantidad total es impar, decide la distribución que mejor contribuye al equilibrio general.</p>
     </div>
 
@@ -1418,11 +1048,14 @@ function generarEquipos(){
     arqueroAId:null, arqueroBId:null, arqueroANombre:null, arqueroBNombre:null,
     resultadoTipo:'empate', diferencia:0, nivelPartido:'', best:[], worst:[], notas:''
   };
-  // Cada vez que se genera un nuevo partido desde la selección se crea un
-  // nuevo pendiente. Los pendientes anteriores se conservan acumulativamente.
-  // Si se está viendo/editando un pendiente, sus cambios se guardan mediante
-  // actualizarPartidoArmadoDesdeLastTeams(), no volviendo a generar desde aquí.
-  state.matches.unshift(partidoArmado);
+  // Si ya había un partido armado en edición, lo reemplazamos: no generamos duplicados.
+  const anterior=state.lastTeams?.matchId ? obtenerPartidoPendiente(state.lastTeams.matchId) : null;
+  if(anterior){
+    const idx=state.matches.findIndex(m=>m.id===anterior.id);
+    state.matches[idx]=partidoArmado;
+  } else {
+    state.matches.unshift(partidoArmado);
+  }
   sincronizarLastTeamsConPartido(partidoArmado);
   saveState();
   renderStats();
@@ -1506,22 +1139,8 @@ function renderEditorEquipos(){
   const skillB = teamB.reduce((s,p)=>s+habilidadCompetitiva(p),0);
   const global = fuerzaGlobal(teamA,teamB);
   const diff = Math.abs(skillA/teamA.length - skillB/teamB.length);
-  const listA = teamA.map(p=>`<li class="team-player" data-player-id="${p.id}" draggable="true"
-      ondragstart="arrastrarJugador(event,'${p.id}')"
-      ondragend="finalizarArrastre(event)"
-      ondragenter="marcarDestino(event,'${p.id}')"
-      ondragleave="desmarcarDestino(event)"
-      ondragover="marcarDestino(event,'${p.id}')"
-      ondrop="soltarJugador(event,'${p.id}')">
-      <span>${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span class="team-player-skill">${estrellas(p.skill)}</span></li>`).join('');
-  const listB = teamB.map(p=>`<li class="team-player" data-player-id="${p.id}" draggable="true"
-      ondragstart="arrastrarJugador(event,'${p.id}')"
-      ondragend="finalizarArrastre(event)"
-      ondragenter="marcarDestino(event,'${p.id}')"
-      ondragleave="desmarcarDestino(event)"
-      ondragover="marcarDestino(event,'${p.id}')"
-      ondrop="soltarJugador(event,'${p.id}')">
-      <span>${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span class="team-player-skill">${estrellas(p.skill)}</span></li>`).join('');
+  const listA = teamA.map(p=>`<li class="team-player" draggable="true" ondragstart="arrastrarJugador(event,'${p.id}')" ondragover="event.preventDefault()" ondrop="soltarJugador(event,'${p.id}')"><span>${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span>${ratingCompact(p.skill)}</span></li>`).join('');
+  const listB = teamB.map(p=>`<li class="team-player" draggable="true" ondragstart="arrastrarJugador(event,'${p.id}')" ondragover="event.preventDefault()" ondrop="soltarJugador(event,'${p.id}')"><span>${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span>${ratingCompact(p.skill)}</span></li>`).join('');
   const optsA = `<option value="">— Elegí jugador —</option>` + teamA.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
   const optsB = `<option value="">— Elegí reemplazo —</option>` + teamB.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
   const optsB2 = `<option value="">— Elegí jugador —</option>` + teamB.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
@@ -1531,23 +1150,22 @@ function renderEditorEquipos(){
     <div class="card armar-result-screen">
       <div class="back-selection"><button class="btn secondary small" onclick="volverASeleccionJugadores()">← Cambiar jugadores</button></div>
       <h2>Equipos de hoy · Partido ${obtenerPartidoPendiente(state.lastTeams.matchId)?.numero||''}</h2>
-      <div class="msg ok" style="margin-bottom:10px;">📌 Este partido está <b>pendiente de jugar</b>. La formación que ves es el último estado guardado. Podés revisarla o ajustarla antes de jugar.</div>
+      <div class="msg ok" style="margin-bottom:10px;">📌 Armado guardado automáticamente como <b>partido pendiente</b> en este dispositivo. Exportá el Excel si querés compartirlo o tener un respaldo.</div>
       <p class="desc">Los equipos fueron armados buscando el mayor equilibrio posible entre habilidades y las reglas configuradas. ${teamA.length} vs ${teamB.length} jugadores.</p>
       <div class="global-balance ${reglasOk?'':'warn-balance'}">
         <strong>Fuerza competitiva global: ${numeroARating(global)} / 10</strong>
         <span>Diferencia entre equipos: ${numeroARating(diff)} puntos</span>
       </div>
       ${!reglasOk ? `<div class="msg warn">⚠️ La modificación manual actual incumple una regla configurada. Volvé a intercambiar jugadores.</div>` : ''}
-      <div class="drag-hint">↕ Arrastrá un jugador sobre otro para intercambiarlo. Al moverlo vas a ver claramente dónde podés soltarlo.</div>
       <div class="teams-wrap">
         <div class="team-col A">
           <h3>Equipo local</h3>
-          <ul ondragover="event.preventDefault();this.parentElement.classList.add('drag-over')" ondragleave="this.parentElement.classList.remove('drag-over')" ondrop="this.parentElement.classList.remove('drag-over');event.preventDefault()">${listA}</ul>
+          <ul ondragover="event.preventDefault()">${listA}</ul>
           <div class="total">Fuerza competitiva: <b>${numeroARating(skillA/teamA.length)} / 10</b></div>
         </div>
         <div class="team-col B">
           <h3>Equipo visitante</h3>
-          <ul ondragover="event.preventDefault();this.parentElement.classList.add('drag-over')" ondragleave="this.parentElement.classList.remove('drag-over')" ondrop="this.parentElement.classList.remove('drag-over');event.preventDefault()">${listB}</ul>
+          <ul ondragover="event.preventDefault()">${listB}</ul>
           <div class="total">Fuerza competitiva: <b>${numeroARating(skillB/teamB.length)} / 10</b></div>
         </div>
       </div>
@@ -1570,12 +1188,10 @@ function renderEditorEquipos(){
         <div><label>🧤 Arquero de hoy — Visitante</label><select id="arqueroB" onchange="setArquero('B', this.value)">${`<option value="">— Sin arquero fijo —</option>` + teamB.map(p=>`<option value="${p.id}" ${state.lastTeams.arqueroB===p.id?'selected':''}>${nombreVisible(p)}</option>`).join('')}</select></div>
       </div>
       <div id="canchaWrap">${dibujarCancha(teamA, teamB, state.lastTeams.arqueroA, state.lastTeams.arqueroB)}</div>
-      <div class="manual-actions">
-        <button class="btn secondary" onclick="guardarCambiosManualLocal()">💾 Guardar cambios localmente</button>
-        <button class="btn secondary" onclick="switchTab('resultado')">📝 Ir a cargar resultado →</button>
-        <button class="btn secondary" onclick="exportarExcel()">📤 Descargar Excel pendiente de jugar</button>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn secondary" onclick="switchTab('resultado')">Ir a cargar resultado →</button>
+        <button class="btn secondary" onclick="exportarExcel()">📤 Guardar Excel — partido pendiente</button>
       </div>
-      <div id="manualSaveStatus" class="manual-saved">✓ Cambios manuales guardados localmente</div>
     </div>
   `;
   window._lastBest = {teamA,teamB,skillA,skillB,diff};
@@ -1588,41 +1204,6 @@ function volverASeleccionJugadores(){
 function arrastrarJugador(event,id){
   event.dataTransfer.setData('text/plain',id);
   event.dataTransfer.effectAllowed='move';
-  const card=event.currentTarget;
-  card.classList.add('dragging');
-  document.querySelectorAll('.team-col').forEach(el=>el.classList.add('drag-over'));
-}
-function finalizarArrastre(event){
-  event.currentTarget.classList.remove('dragging');
-  document.querySelectorAll('.drop-target').forEach(el=>{
-    el.classList.remove('drop-target');
-    el.removeAttribute('data-drag-target');
-  });
-  document.querySelectorAll('.team-col').forEach(el=>el.classList.remove('drag-over'));
-}
-function marcarDestino(event,targetId){
-  event.preventDefault();
-  const sourceId=event.dataTransfer.getData('text/plain');
-  if(!sourceId || sourceId===targetId || !state.lastTeams) return;
-
-  const a=state.lastTeams.teamA, b=state.lastTeams.teamB;
-  const sourceTeam=a.includes(sourceId)?'A':(b.includes(sourceId)?'B':null);
-  const targetTeam=a.includes(targetId)?'A':(b.includes(targetId)?'B':null);
-
-  // Only highlight a real swap target from the opposite team.
-  if(sourceTeam && targetTeam && sourceTeam!==targetTeam){
-    document.querySelectorAll('.team-player.drop-target').forEach(el=>{
-      if(el!==event.currentTarget) el.classList.remove('drop-target');
-    });
-    event.currentTarget.classList.add('drop-target');
-    event.currentTarget.setAttribute('data-drag-target','true');
-  }
-}
-function desmarcarDestino(event){
-  // Keep the highlight while the pointer is moving inside the same player.
-  // dragover will immediately restore it if needed.
-  event.currentTarget.classList.remove('drop-target');
-  event.currentTarget.removeAttribute('data-drag-target');
 }
 function soltarJugador(event,targetId){
   event.preventDefault();
@@ -1638,16 +1219,9 @@ function intercambiarJugadores(idA,idB){
   const a=state.lastTeams.teamA, b=state.lastTeams.teamB;
   const ia=a.indexOf(idA), ib=b.indexOf(idA);
   const ja=a.indexOf(idB), jb=b.indexOf(idB);
-  // Works in both directions: Local -> Visitante and Visitante -> Local.
-  if(ia>=0 && jb>=0){
-    a[ia]=idB;
-    b[jb]=idA;
-  } else if(ib>=0 && ja>=0){
-    b[ib]=idB;
-    a[ja]=idA;
-  } else {
-    return;
-  }
+  if(ia>=0 && jb>=0){ a[ia]=idB; b[jb]=idA; }
+  else if(ib>=0 && ja>=0){ b[ib]=idA; a[ja]=idB; }
+  else return;
   if(state.lastTeams.arqueroA===idA) state.lastTeams.arqueroA=null;
   if(state.lastTeams.arqueroB===idA) state.lastTeams.arqueroB=null;
   if(state.lastTeams.arqueroA===idB) state.lastTeams.arqueroA=null;
@@ -1671,18 +1245,6 @@ function setArquero(team, id){
   saveState();
   const best = window._lastBest;
   if(best && document.getElementById('canchaWrap')) document.getElementById('canchaWrap').innerHTML = dibujarCancha(best.teamA, best.teamB, state.lastTeams.arqueroA, state.lastTeams.arqueroB);
-}
-
-function guardarCambiosManualLocal(){
-  // The manual edit functions already update state.lastTeams; this explicit action
-  // confirms those changes are persisted in this browser.
-  saveState();
-  const el=document.getElementById('manualSaveStatus');
-  if(el){
-    el.style.display='block';
-    clearTimeout(window._manualSaveTimer);
-    window._manualSaveTimer=setTimeout(()=>{el.style.display='none';},3500);
-  }
 }
 
 // Formación fija 2-1-2 para 5 jugadores, sin superposición. Equipo local ataca hacia la derecha, visitante hacia la izquierda.
@@ -1983,84 +1545,12 @@ function toggleFormacionHistorial(idx){
   el.style.display='block';
 }
 
-
-function eliminarPartidoPendiente(id){
-  const m=state.matches.find(x=>x.id===id && x.estado==='armado');
-  if(!m) return;
-  const numero=m.numero || '';
-  if(!confirm(`¿Eliminar el Partido ${numero} pendiente? Se quitará de la base y no afectará partidos jugados.`)) return;
-  state.matches=state.matches.filter(x=>x.id!==id);
-  if(state.lastTeams?.matchId===id) state.lastTeams=null;
-  saveState();
-  renderStats();
-  renderHistorial();
-}
-
-function recalcularJugadorDesdeHistorial(){
-  // Reconstruye partidos jugados, habilidad y evolución a partir del
-  // puntaje inicial y de los partidos que permanecen. Esto permite eliminar
-  // un partido jugado sin dejar estadísticas desfasadas.
-  const jugados=[...state.matches]
-    .filter(m=>m.estado!=='armado')
-    .sort((a,b)=>{
-      const da=Date.parse(a.date||a.fechaArmado||'')||0;
-      const db=Date.parse(b.date||b.fechaArmado||'')||0;
-      return da-db || (Number(a.numero)||0)-(Number(b.numero)||0);
-    });
-
-  state.players.forEach(p=>{
-    const oldHist=Array.isArray(p.skillHistory)?p.skillHistory:[];
-    const inicialEntry=oldHist.find(h=>String(h.label||'').toLowerCase()==='inicial') || oldHist[0];
-    const initialSkill=Math.max(1,Math.min(10,Number(inicialEntry?.skill ?? p.skill) || 6));
-    let skill=initialSkill;
-    let matchesPlayed=0;
-    const history=[{
-      date: inicialEntry?.date || new Date().toISOString(),
-      skill: Number(skill.toFixed(2)),
-      label:'Inicial'
-    }];
-
-    for(const m of jugados){
-      const ids=[...(m.teamAIds||[]),...(m.teamBIds||[])];
-      if(!ids.includes(p.id)) continue;
-      matchesPlayed++;
-      const visible=nombreVisible(p);
-      const oldName=String(p.name||'');
-      const best=(m.best||[]).some(x=>String(x)===visible || String(x)===oldName);
-      const worst=(m.worst||[]).some(x=>String(x)===visible || String(x)===oldName);
-      const arquero = m.arqueroAId===p.id || m.arqueroBId===p.id;
-      if(best) skill=Math.min(10,skill+0.3);
-      if(worst && !arquero) skill=Math.max(1,skill-0.3);
-      history.push({
-        date:m.date || m.fechaArmado || new Date().toISOString(),
-        skill:Number(skill.toFixed(2)),
-        label:`P${m.numero||''}`
-      });
-    }
-    p.matchesPlayed=matchesPlayed;
-    p.skill=Number(skill.toFixed(2));
-    p.skillHistory=history;
-  });
-}
-
-function eliminarPartidoJugado(id){
-  const m=state.matches.find(x=>x.id===id && x.estado!=='armado');
-  if(!m) return;
-  const numero=m.numero || '';
-  if(!confirm(`¿Eliminar el Partido ${numero} del historial?\n\nTambién se recalcularán partidos jugados, habilidades y evolución de los jugadores a partir de los partidos que queden.`)) return;
-  state.matches=state.matches.filter(x=>x.id!==id);
-  recalcularJugadorDesdeHistorial();
-  saveState();
-  renderStats();
-  renderHistorial();
-}
-
 function renderHistorial(){
   const pendientes=partidosPendientes();
   const jugados=state.matches.filter(m=>m.estado!=='armado');
   const nivelTexto = {parejo:'🟢 Muy parejo', peleado:'🟠 Peleado', desnivelado:'🔴 Desnivelado'};
   const pendingHtml=pendientes.length ? `
-    <div class="card" id="pendientesHistorial" style="margin-bottom:14px;">
+    <div class="card" style="margin-bottom:14px;">
       <h2>📌 Partidos armados pendientes (${pendientes.length})</h2>
       <p class="desc">Estos partidos ya fueron armados y guardados, pero todavía no se cargó su resultado.</p>
       ${pendientes.map((m,i)=>`
@@ -2068,11 +1558,7 @@ function renderHistorial(){
           <div class="top"><span class="date">Partido ${m.numero||state.matches.indexOf(m)+1} · ${new Date(m.fechaArmado||m.date).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'})}</span><span class="score">PENDIENTE</span></div>
           <div class="teams">Local: ${(m.teamA||[]).join(', ')}</div>
           <div class="teams">Visitante: ${(m.teamB||[]).join(', ')}</div>
-          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn secondary small" onclick="verPartidoPendiente('${m.id}')">👀 Ver equipos</button>
-            <button class="btn small" onclick="seleccionarPartidoPendiente('${m.id}');switchTab('resultado')">📝 Cargar resultado</button>
-            <button class="btn secondary small" onclick="eliminarPartidoPendiente('${m.id}')">🗑️ Eliminar</button>
-          </div>
+          <button class="btn secondary small" style="margin-top:8px;" onclick="seleccionarPartidoPendiente('${m.id}');switchTab('resultado')">Cargar resultado →</button>
         </div>`).join('')}
     </div>` : '';
   const items = jugados.map(m=>{
@@ -2087,10 +1573,7 @@ function renderHistorial(){
       ${m.best?.length ? `<div class="teams"><span class="historial-arrow-up">↑</span> Destacaron: ${m.best.join(', ')}</div>` : ''}
       ${m.worst?.length ? `<div class="teams"><span class="historial-arrow-down">↓</span> Más costaron: ${m.worst.join(', ')}</div>` : ''}
       ${m.notas ? `<div class="teams">📝 ${m.notas}</div>` : ''}
-      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn secondary small" onclick="toggleFormacionHistorial(${idx})">👀 Ver equipos</button>
-        <button class="btn secondary small" onclick="eliminarPartidoJugado('${m.id}')">🗑️ Eliminar</button>
-      </div>
+      <button class="btn secondary small" style="margin-top:8px;" onclick="toggleFormacionHistorial(${idx})">VER formación</button>
       <div id="formacionHist${idx}" style="display:none;"></div>
     </div>`;
   }).join('');
@@ -2122,110 +1605,6 @@ document.getElementById('tabs').addEventListener('click', e=>{
   renderStats();
   mostrarImportacionInicial();
 })();
-/* ============================================================
-   PLANTEL: IMPORT / EXPORT INDEPENDIENTE
-   Este Excel contiene SOLO información actual del plantel y
-   habilidades. No incluye partidos, resultados ni historial.
-   La importación modifica SOLO state.players y no toca state.matches.
-   ============================================================ */
-function exportarPlantel(){
-  if(!loaded){ alert('Primero creá o cargá una base.'); return; }
-  if(typeof XLSX === 'undefined'){ alert('No está disponible el componente de Excel.'); return; }
-
-  const jugadores = state.players.map(p => ({
-    ID: p.id,
-    Nombre: p.name,
-    Apodo: p.apodo || '',
-    Genero: p.gender === 'F' ? 'F' : 'M',
-    Habilidad: Number(p.skill || 0),
-    Arquero: p.esArquero ? 'Si' : 'No',
-    Activo: p.active === false ? 'No' : 'Si',
-    HabilidadEspecial: p.habilidadEspecial || ''
-  }));
-
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.json_to_sheet(jugadores);
-  ws['!cols']=[
-    {wch:18},{wch:25},{wch:20},{wch:10},{wch:12},{wch:12},{wch:10}
-  ];
-  XLSX.utils.book_append_sheet(wb,ws,'Plantel');
-
-  const fecha=new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb,`futbol5_plantel_${fecha}.xlsx`);
-  const status=document.getElementById('plantelTransferStatus');
-  if(status) status.textContent=`✓ Plantel exportado · ${jugadores.length} jugadores · sin partidos ni historial`;
-}
-
-function importarPlantel(event){
-  const file=event.target.files && event.target.files[0];
-  if(!file) return;
-  if(typeof XLSX === 'undefined'){ alert('No está disponible el componente de Excel.'); event.target.value=''; return; }
-
-  const reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
-      const sheetName=wb.SheetNames.find(n=>String(n).toLowerCase()==='plantel') || wb.SheetNames[0];
-      const ws=wb.Sheets[sheetName];
-      if(!ws) throw new Error('No encontré una hoja de plantel.');
-      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
-      if(!rows.length) throw new Error('El archivo no contiene jugadores.');
-
-      const norm=(r,i)=>{
-        const val=(...keys)=>{ for(const k of keys){ if(r[k]!==undefined && r[k]!==null && r[k]!=='') return r[k]; } return ''; };
-        const skillRaw=String(val('Habilidad','habilidad','Rating','rating')).replace(',','.');
-        const skill=Math.max(1,Math.min(10,Number(skillRaw)||6));
-        const bool=v=>['si','sí','s','true','1','yes','x'].includes(String(v).trim().toLowerCase());
-        return {
-          id:String(val('ID','id') || ('p_'+Date.now()+'_'+i)),
-          name:String(val('Nombre','nombre','Name','name') || `Jugador ${i+1}`).trim(),
-          apodo:String(val('Apodo','apodo','Nickname','nickname') || '').trim(),
-          gender:String(val('Genero','Género','genero','Gender','gender') || 'M').toUpperCase()==='F'?'F':'M',
-          skill,
-          matchesPlayed:0,
-          active: val('Activo','activo','Active','active')==='' ? true : bool(val('Activo','activo','Active','active')),
-          esArquero:bool(val('Arquero','arquero','Goalkeeper','goalkeeper')),
-          habilidadEspecial:String(val('HabilidadEspecial','habilidad especial','Especialidad','especialidad') || ''),
-          skillHistory:[]
-        };
-      };
-
-      const imported=rows.map(norm).filter(p=>p.name);
-      if(!imported.length) throw new Error('No encontré jugadores válidos.');
-
-      // Importación EXCLUSIVA del plantel. Los partidos y pendientes quedan intactos.
-      // Si ya existen jugadores con el mismo ID, conservamos sus estadísticas/historial.
-      const anteriores = new Map((state.players||[]).map(p=>[String(p.id),p]));
-      state.players=imported.map(p=>{
-        const anterior=anteriores.get(String(p.id));
-        if(anterior){
-          p.matchesPlayed=anterior.matchesPlayed||0;
-          p.skillHistory=Array.isArray(anterior.skillHistory) ? anterior.skillHistory : [];
-          if(!p.habilidadEspecial) p.habilidadEspecial = anterior.habilidadEspecial || '';
-        }else{
-          p.matchesPlayed=0;
-          p.skillHistory=[{date:new Date().toISOString(),skill:p.skill,label:'Actual'}];
-        }
-        return p;
-      });
-
-      loaded=true;
-      guardarEstadoLocal();
-      actualizarEstadoExcel(file.name+' · plantel cargado');
-      renderStats();
-      renderPlantel();
-      const status=document.getElementById('plantelTransferStatus');
-      if(status) status.textContent=`✓ Plantel cargado · ${imported.length} jugadores · partidos e historial no modificados`;
-    }catch(err){
-      alert('No pude cargar el plantel. Usá un Excel exportado desde “Exportar plantel”.\
-\
-Detalle: '+err.message);
-    }finally{ event.target.value=''; }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-
 </script>
 </body>
 </html>
