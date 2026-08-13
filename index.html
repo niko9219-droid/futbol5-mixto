@@ -1004,7 +1004,22 @@ function togglePlantelEdit(){ plantelEditMode = !plantelEditMode; renderPlantel(
 function renderPlantel(){
   const rows = state.players.filter(p=>p.active!==false)
     .slice()
-    .sort((a,b)=>b.skill-a.skill)
+    .sort((a,b)=>{
+      const sa=jugadorEstadisticas(a), sb=jugadorEstadisticas(b);
+      // Ranking del plantel:
+      // 1) más victorias
+      // 2) menos derrotas
+      // 3) más veces destacado
+      // 4) menos veces que le costó
+      // 5) mayor habilidad actual (desempate final)
+      return (
+        (sb.ganados-sa.ganados) ||
+        (sa.perdidos-sb.perdidos) ||
+        (sb.destacados-sa.destacados) ||
+        (sa.costaron-sb.costaron) ||
+        (sb.skill-sa.skill)
+      );
+    })
     .map(p=>{
       const s=jugadorEstadisticas(p);
       return `
@@ -1048,7 +1063,7 @@ function renderPlantel(){
 
     <div class="card">
       <h2>Plantel (${state.players.filter(p=>p.active!==false).length})</h2>
-      <p class="desc">Además de la habilidad y especialidad, ahora podés consultar automáticamente el rendimiento histórico de cada jugador.</p>
+      <p class="desc">Ordenado por rendimiento: primero más victorias, luego menos derrotas, más veces destacado, menos veces que le costó y, en último lugar, habilidad actual para desempatar.</p>
       <button class="edit-link" onclick="togglePlantelEdit()">${plantelEditMode ? 'Ocultar edición' : 'Editar plantel (modificar / quitar / marcar arquero)'}</button>
       ${state.players.some(p=>p.active!==false) ? `
       <div class="table-scroll">
