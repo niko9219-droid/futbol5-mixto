@@ -516,7 +516,9 @@
   }
 }
 </style>
-</head>
+<style id="competitive-force-v8">
+.team-raw-skill{display:block;font-size:.82em;color:var(--tinta-suave);font-weight:400;margin-top:3px}
+</style></head>
 <body>
 <div class="wrap">
   <header class="hero">
@@ -563,6 +565,9 @@ function fuerzaGlobal(teamA, teamB){
   return todos.reduce((s,p)=>s+habilidadCompetitiva(p),0)/todos.length;
 }
 function numeroARating(v){ return Number(v||0).toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function numeroARatingPreciso(v){
+  return Number(v||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
 
 // El puntaje interno es de 1 a 10. Las estrellas son solo la representación visual.
 // Para el armado de equipos, las estrellas no se comparan 1 a 1 entre géneros:
@@ -589,11 +594,25 @@ function especialLabel(v){
   return x ? x.label : 'Sin especialidad';
 }
 function habilidadCompetitiva(p){
+  // Fuerza competitiva = habilidad general ajustada por género.
+  // La especialidad NO suma puntos al nivel: se usa aparte para equilibrar perfiles.
   const raw = Number(p.skill) || 0;
-  const base = p.gender === 'F' ? raw * FACTOR_COMPETITIVO_MUJER : raw;
+  return p.gender === 'F' ? raw * FACTOR_COMPETITIVO_MUJER : raw;
+}
+
+function perfilCompetitivo(p){
   const e = especialData(p);
-  const perfil = (e.ataque + e.defensa + e.movimiento + e.creacion) / 4;
-  return base + perfil;
+  return {
+    ataque:e.ataque || 0,
+    defensa:e.defensa || 0,
+    movimiento:e.movimiento || 0,
+    creacion:e.creacion || 0
+  };
+}
+
+function promedioHabilidad(team){
+  if(!team || !team.length) return 0;
+  return team.reduce((s,p)=>s+(Number(p.skill)||0),0)/team.length;
 }
 
 function ratingCompact(skill){
@@ -1222,7 +1241,7 @@ function renderReglas(){
 
   document.getElementById('content').innerHTML = `
     <div class="card">
-      <h2>Regla fija: reparto de mujeres</h2>
+      <h2>Regla fija: distribución femenina</h2>
       <p class="desc">Se aplica automáticamente: el sistema busca una composición equilibrada entre ambos equipos y, cuando la cantidad total es impar, decide la distribución que mejor contribuye al equilibrio general.</p>
     </div>
 
@@ -1388,6 +1407,7 @@ function mejorDivision(jugadores, forbidden){
   const combos = combinacionesDe(indices, tamA);
   let mejor = null;
   const vistos = new Set();
+
   for(const comboA of combos){
     const setA = new Set(comboA);
     const key = comboA.slice().sort((a,b)=>a-b).join(',');
@@ -1403,16 +1423,35 @@ function mejorDivision(jugadores, forbidden){
 
     const skillA = teamA.reduce((s,p)=>s+habilidadCompetitiva(p),0);
     const skillB = teamB.reduce((s,p)=>s+habilidadCompetitiva(p),0);
-    const diff = Math.abs(skillA - skillB);
+    const diff = Math.abs(skillA/teamA.length - skillB/teamB.length);
+
     const femA = teamA.filter(p=>p.gender==='F').length;
     const femB = teamB.filter(p=>p.gender==='F').length;
     const femDiff = Math.abs(femA - femB);
 
-    // Primero equilibra cantidad de mujeres y luego la fuerza competitiva,
-    // aplicando la equivalencia de género definida arriba.
-    const score = femDiff*100 + diff;
+    // Balance de perfiles: la especialidad es secundaria y nunca reemplaza la habilidad.
+    const perfilA = ['ataque','defensa','movimiento','creacion'].map(k =>
+      teamA.reduce((s,p)=>s+perfilCompetitivo(p)[k],0)
+    );
+    const perfilB = ['ataque','defensa','movimiento','creacion'].map(k =>
+      teamB.reduce((s,p)=>s+perfilCompetitivo(p)[k],0)
+    );
+    const perfilDiff = perfilA.reduce((s,v,i)=>s+Math.abs(v-perfilB[i]),0);
+
+    // Prioridad:
+    // 1) distribución femenina (regla fija)
+    // 2) fuerza competitiva
+    // 3) perfiles/especialidades
+    const score = femDiff*1000 + diff*100 + perfilDiff;
+
     if(!mejor || score < mejor.score){
-      mejor = { teamA, teamB, skillA, skillB, diff, score };
+      mejor = {
+        teamA, teamB,
+        skillA, skillB, diff,
+        rawA:promedioHabilidad(teamA),
+        rawB:promedioHabilidad(teamB),
+        femDiff, perfilDiff, score
+      };
     }
   }
   return mejor;
@@ -1454,8 +1493,12 @@ function renderEditorEquipos(){
   const teamB = state.lastTeams.teamB.map(id=>state.players.find(p=>p.id===id)).filter(Boolean);
   const skillA = teamA.reduce((s,p)=>s+habilidadCompetitiva(p),0);
   const skillB = teamB.reduce((s,p)=>s+habilidadCompetitiva(p),0);
+  const forceA = skillA/teamA.length;
+  const forceB = skillB/teamB.length;
   const global = fuerzaGlobal(teamA,teamB);
-  const diff = Math.abs(skillA/teamA.length - skillB/teamB.length);
+  const diff = Math.abs(forceA-forceB);
+  const rawA = promedioHabilidad(teamA);
+  const rawB = promedioHabilidad(teamB);
   const listA = teamA.map(p=>`<li class="team-player" draggable="true" ondragstart="arrastrarJugador(event,'${p.id}')" ondragover="event.preventDefault()" ondrop="soltarJugador(event,'${p.id}')"><span>${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span>${ratingCompact(p.skill)}</span></li>`).join('');
   const listB = teamB.map(p=>`<li class="team-player" draggable="true" ondragstart="arrastrarJugador(event,'${p.id}')" ondragover="event.preventDefault()" ondrop="soltarJugador(event,'${p.id}')"><span>${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span>${ratingCompact(p.skill)}</span></li>`).join('');
   const optsA = `<option value="">— Elegí jugador —</option>` + teamA.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
@@ -1471,19 +1514,25 @@ function renderEditorEquipos(){
       <p class="desc">Los equipos fueron armados buscando el mayor equilibrio posible entre habilidades y las reglas configuradas. ${teamA.length} vs ${teamB.length} jugadores.</p>
       <div class="global-balance ${reglasOk?'':'warn-balance'}">
         <strong>Fuerza competitiva global: ${numeroARating(global)} / 10</strong>
-        <span>Diferencia entre equipos: ${numeroARating(diff)} puntos</span>
+        <span>Local: ${numeroARatingPreciso(forceA)} · Visitante: ${numeroARatingPreciso(forceB)} · Diferencia: ${numeroARatingPreciso(diff)}</span>
       </div>
       ${!reglasOk ? `<div class="msg warn">⚠️ La modificación manual actual incumple una regla configurada. Volvé a intercambiar jugadores.</div>` : ''}
       <div class="teams-wrap">
         <div class="team-col A">
           <h3>Equipo local</h3>
           <ul ondragover="event.preventDefault()">${listA}</ul>
-          <div class="total">Fuerza competitiva: <b>${numeroARating(skillA/teamA.length)} / 10</b></div>
+          <div class="total">
+            Fuerza competitiva: <b>${numeroARatingPreciso(forceA)} / 10</b>
+            <span class="team-raw-skill">Habilidad promedio: ${numeroARatingPreciso(rawA)} / 10</span>
+          </div>
         </div>
         <div class="team-col B">
           <h3>Equipo visitante</h3>
           <ul ondragover="event.preventDefault()">${listB}</ul>
-          <div class="total">Fuerza competitiva: <b>${numeroARating(skillB/teamB.length)} / 10</b></div>
+          <div class="total">
+            Fuerza competitiva: <b>${numeroARatingPreciso(forceB)} / 10</b>
+            <span class="team-raw-skill">Habilidad promedio: ${numeroARatingPreciso(rawB)} / 10</span>
+          </div>
         </div>
       </div>
       <div class="edit-teams-box">
