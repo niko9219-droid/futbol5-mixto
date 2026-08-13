@@ -437,6 +437,85 @@
   }
 }
 </style>
+
+<style id="plantel-row-grid-fix-v6">
+.plantel-stats-table{
+  width:100%;
+  min-width:720px;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+.plantel-stats-table thead tr,
+.plantel-stats-table tbody tr{
+  display:grid;
+  grid-template-columns: 24% 34% 19% 14% 9%;
+  align-items:center;
+  width:100%;
+  min-height:64px;
+}
+.plantel-stats-table thead th,
+.plantel-stats-table tbody td{
+  box-sizing:border-box;
+  width:auto!important;
+  min-width:0!important;
+  height:100%;
+  min-height:64px;
+  display:flex;
+  align-items:center;
+  padding:10px 10px;
+  vertical-align:middle!important;
+}
+.plantel-stats-table thead th{
+  min-height:42px;
+  height:42px;
+  padding-top:8px;
+  padding-bottom:8px;
+}
+.plantel-stats-table tbody tr{
+  border-top:1px solid rgba(18,64,43,.10);
+}
+.plantel-stats-table tbody .mobile-stats{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  flex-wrap:nowrap;
+  height:100%;
+  min-height:64px;
+  margin:0;
+  padding:10px;
+}
+.plantel-stats-table .player-cell,
+.plantel-stats-table .skill-cell,
+.plantel-stats-table .specialty-icon-cell,
+.plantel-stats-table .row-actions{
+  display:flex;
+  align-items:center;
+  height:100%;
+  min-height:64px;
+}
+.plantel-stats-table .specialty-icon-cell{
+  justify-content:center;
+}
+.plantel-stats-table .row-actions{
+  justify-content:flex-start;
+}
+@media(max-width:700px){
+  .plantel-stats-table{
+    min-width:690px;
+  }
+  .plantel-stats-table thead tr,
+  .plantel-stats-table tbody tr{
+    grid-template-columns: 125px 245px 105px 72px 100px;
+    min-width:690px;
+  }
+  .plantel-stats-table thead th,
+  .plantel-stats-table tbody td,
+  .plantel-stats-table tbody .mobile-stats{
+    padding-left:8px;
+    padding-right:8px;
+  }
+}
+</style>
 </head>
 <body>
 <div class="wrap">
