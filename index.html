@@ -518,7 +518,60 @@
 </style>
 <style id="competitive-force-v8">
 .team-raw-skill{display:block;font-size:.82em;color:var(--tinta-suave);font-weight:400;margin-top:3px}
-</style></head>
+</style>
+<style id="add-player-mobile-collapse">
+.add-player-title{margin:0!important}
+.add-player-toggle{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  width:100%;
+  border:0;
+  background:transparent;
+  padding:0;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.add-player-plus{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:38px;
+  height:38px;
+  border:1px solid rgba(18,64,43,.25);
+  border-radius:50%;
+  font-size:30px;
+  font-weight:500;
+  line-height:1;
+  transition:transform .18s ease, background .18s ease;
+}
+.add-player-card.is-open .add-player-plus{
+  transform:rotate(45deg);
+}
+@media(min-width:701px){
+  .add-player-toggle{cursor:default}
+  .add-player-plus{display:none}
+}
+@media(max-width:700px){
+  .add-player-body{
+    display:none;
+    margin-top:20px;
+  }
+  .add-player-card.is-open .add-player-body{
+    display:block;
+  }
+  .add-player-toggle{
+    min-height:42px;
+  }
+  .add-player-toggle span:first-child{
+    font-size:24px;
+  }
+}
+</style>
+</head>
 <body>
 <div class="wrap">
   <header class="hero">
@@ -1020,6 +1073,13 @@ function cerrarJugadorStats(){
 let plantelEditMode = false;
 function togglePlantelEdit(){ plantelEditMode = !plantelEditMode; renderPlantel(); }
 
+function toggleAgregarJugador(){
+  const card=document.querySelector('.add-player-card');
+  const btn=document.querySelector('.add-player-toggle');
+  if(!card || !btn) return;
+  const abierto=card.classList.toggle('is-open');
+  btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+}
 function renderPlantel(){
   const rows = state.players.filter(p=>p.active!==false)
     .slice()
@@ -1066,9 +1126,15 @@ function renderPlantel(){
     }).join('');
 
   document.getElementById('content').innerHTML = `
-    <div class="card">
-      <h2>Agregar jugador/a</h2>
-      <p class="desc"><div class="specialty-help"><strong>🎯 Habilidad especial</strong><span>Elegí la característica que mejor representa cómo juega habitualmente. Complementa la ⭐ habilidad general y tiene un peso menor en el armado.</span></div><p class="desc">El puntaje inicial es una estimación tuya de 1 a 10. Este número queda oculto y se muestra con hasta 5 estrellas, incluyendo medias estrellas. Se va a ir ajustando solo después de cada partido.</p>
+    <div class="card add-player-card">
+      <h2 class="add-player-title">
+        <button type="button" class="add-player-toggle" onclick="toggleAgregarJugador()" aria-expanded="false">
+          <span>Agregar jugador/a</span><span class="add-player-plus">+</span>
+        </button>
+      </h2>
+      <div class="add-player-body">
+        <div class="specialty-help"><strong>🎯 Habilidad especial</strong><span>Elegí la característica que mejor representa cómo juega habitualmente. Complementa la ⭐ habilidad general y tiene un peso menor en el armado.</span></div>
+        <p class="desc">El puntaje inicial es una estimación tuya de 1 a 10. Este número queda oculto y se muestra con hasta 5 estrellas, incluyendo medias estrellas. Se va a ir ajustando solo después de cada partido.</p>
       <div class="row player-add-row">
         <div><label>Nombre</label><input type="text" id="newName" placeholder="Ej: Camila"></div>
         <div><label>Apodo (opcional)</label><input type="text" id="newApodo" placeholder="Ej: Cami"></div>
@@ -1077,6 +1143,7 @@ function renderPlantel(){
         <div style="max-width:140px;"><label>¿Arquero?</label><select id="newArquero"><option value="no">No</option><option value="si">Sí</option></select></div>
         <div class="new-specialty-field" style="max-width:190px;"><label>Habilidad especial</label><select id="newEspecial">${HABILIDADES_ESPECIALES.map(e=>`<option value="${e.value}">${e.label}</option>`).join('')}</select></div>
         <div style="max-width:140px;"><button class="btn" onclick="addPlayer()">Agregar</button></div>
+      </div>
       </div>
     </div>
 
