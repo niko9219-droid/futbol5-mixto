@@ -342,64 +342,99 @@
 }
 </style>
 
-<style id="plantel-mobile-layout-v2">
-.player-name-mobile{display:none}
-.mobile-stats{display:none}
-.mobile-stats-head{display:none}
-
+<style id="plantel-mobile-layout-v3">
+/* Plantel: compact, fixed column order, horizontal scroll on narrow screens */
+.table-scroll{
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  width:100%;
+}
+.plantel-stats-table{
+  min-width:720px;
+  width:100%;
+  border-collapse:collapse;
+}
+.plantel-stats-table th,
+.plantel-stats-table td{
+  vertical-align:middle;
+  padding:11px 10px;
+}
+.plantel-stats-table th:nth-child(1){min-width:150px}
+.plantel-stats-table th:nth-child(2){min-width:235px}
+.plantel-stats-table th:nth-child(3){min-width:105px}
+.plantel-stats-table th:nth-child(4){width:90px;text-align:center}
+.plantel-stats-table th:nth-child(5){width:110px}
+.player-cell{white-space:nowrap}
+.player-name-mobile{font-weight:700}
+.mobile-stats{
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:9px;
+  white-space:nowrap;
+  font-size:12px;
+  line-height:1.2;
+}
+.mobile-stats span{white-space:nowrap}
+.mobile-stats b{font-weight:800}
+.skill-cell{white-space:nowrap}
+.skill-cell .stars{font-size:18px}
+.specialty-icon-cell{
+  text-align:center;
+  font-size:20px;
+  white-space:nowrap;
+  cursor:help;
+}
+.row-actions{
+  white-space:nowrap;
+  text-align:left;
+}
+.row-actions .btn-mini{padding:6px 8px}
+.gender-tag{font-size:9px;margin-left:4px}
 @media(max-width:700px){
-  .table-scroll{
-    overflow-x:visible;
-    width:100%;
-  }
-  .plantel-stats-table{
-    min-width:0;
-    width:100%;
-    table-layout:auto;
-  }
+  .plantel-stats-table{min-width:690px}
   .plantel-stats-table th,
-  .plantel-stats-table td{
-    padding:10px 6px;
+  .plantel-stats-table td{padding:10px 8px}
+  .plantel-stats-table th:nth-child(1){min-width:125px}
+  .plantel-stats-table th:nth-child(2){min-width:245px}
+  .plantel-stats-table th:nth-child(3){min-width:105px}
+  .plantel-stats-table th:nth-child(4){min-width:72px;width:72px}
+  .plantel-stats-table th:nth-child(5){min-width:100px;width:100px}
+  .mobile-stats{gap:8px;font-size:11px}
+  .skill-cell .stars{font-size:17px}
+  .specialty-icon-cell{font-size:19px}
+}
+</style>
+
+<style id="plantel-row-alignment-fix">
+@media(max-width:700px){
+  /* Every column occupies the same row box; statistics are vertically centered in it. */
+  .plantel-stats-table tbody tr{
+    height:64px;
   }
-  .plantel-stats-table th:nth-child(1){width:31%}
-  .plantel-stats-table th:nth-child(2){width:29%}
-  .plantel-stats-table th:nth-child(3){width:20%}
-  .plantel-stats-table th:nth-child(4){width:20%}
-  .player-name-full{display:none}
-  .player-name-mobile{
-    display:inline;
-    font-weight:700;
-    font-size:15px;
+  .plantel-stats-table tbody td{
+    height:64px;
+    box-sizing:border-box;
+    vertical-align:middle !important;
   }
-  .mobile-stats-head{display:table-cell}
-  .mobile-stats{
+  .plantel-stats-table .mobile-stats{
+    height:64px;
+    min-height:64px;
+    box-sizing:border-box;
     display:flex;
-    flex-wrap:wrap;
-    gap:3px 7px;
     align-items:center;
-    font-size:11px;
-    line-height:1.25;
-    color:var(--tinta-suave);
+    align-content:center;
+    justify-content:flex-start;
+    padding-top:0;
+    padding-bottom:0;
   }
-  .mobile-stats span{white-space:nowrap}
-  .mobile-stats b{font-weight:800}
-  .desktop-stat{display:none!important}
-  .plantel-stats-table .stars{
-    font-size:17px;
-    white-space:nowrap;
-  }
-  .plantel-stats-table td:nth-child(4){
-    font-size:12px;
-    line-height:1.25;
-  }
+  .plantel-stats-table .player-cell,
+  .plantel-stats-table .skill-cell,
+  .plantel-stats-table .specialty-icon-cell,
   .plantel-stats-table .row-actions{
-    white-space:nowrap;
-    width:1%;
+    vertical-align:middle !important;
   }
-  .plantel-stats-table .row-actions .btn-mini{
-    padding:6px 7px;
-  }
-  .gender-tag{font-size:9px;margin-left:3px}
 }
 </style>
 </head>
@@ -465,6 +500,10 @@ const HABILIDADES_ESPECIALES = [
 ];
 function especialData(p){
   return HABILIDADES_ESPECIALES.find(e=>e.value===(p.habilidadEspecial||'')) || HABILIDADES_ESPECIALES[0];
+}
+function especialIcon(v){
+  const icons={goleador:'⚽',defensor:'🛡️',corredor:'🏃',todoterreno:'🔄',pase:'👟'};
+  return icons[v] || '—';
 }
 function especialLabel(v){
   const x=HABILIDADES_ESPECIALES.find(e=>e.value===v);
@@ -892,10 +931,9 @@ function renderPlantel(){
       return `
       <tr>
         <td class="player-cell">
-          <span class="player-name-full">${p.name}${p.apodo?` <span class="desc" style="font-style:italic;">"${p.apodo}"</span>`:''}</span>
           <span class="player-name-mobile">${p.apodo || p.name}</span>
           <span class="gender-tag ${p.gender}">${genderLabel(p.gender)}</span>
-          ${plantelEditMode ? `<button class="gk-badge-toggle ${p.esArquero?'on':''}" onclick="toggleArquero('${p.id}')">🧤</button>` : (p.esArquero ? `<span class="gk-badge-toggle on" style="cursor:default;">🧤</span>` : '')}
+          ${p.esArquero ? `<span class="gk-badge-toggle on" style="cursor:default;">🧤</span>` : ''}
         </td>
         <td class="mobile-stats">
           <span><b>PJ</b> ${s.jugados}</span>
@@ -905,14 +943,8 @@ function renderPlantel(){
           <span class="stat-best"><b>⭐</b> ${s.destacados}</span>
           <span class="stat-worst"><b>🔻</b> ${s.costaron}</span>
         </td>
-        <td>${estrellas(p.skill)}</td>
-        <td>${especialLabel(p.habilidadEspecial)}</td>
-        <td class="num-stat desktop-stat">${s.jugados}</td>
-        <td class="num-stat stat-win desktop-stat">${s.ganados}</td>
-        <td class="num-stat stat-draw desktop-stat">${s.empatados}</td>
-        <td class="num-stat stat-loss desktop-stat">${s.perdidos}</td>
-        <td class="num-stat stat-best desktop-stat">${s.destacados}</td>
-        <td class="num-stat stat-worst desktop-stat">${s.costaron}</td>
+        <td class="skill-cell">${estrellas(p.skill)}</td>
+        <td class="specialty-icon-cell" title="${especialLabel(p.habilidadEspecial)}">${especialIcon(p.habilidadEspecial)}</td>
         <td class="row-actions">
           <button class="btn-mini stats-mini" title="Ver estadísticas" onclick="mostrarEstadisticasJugador('${p.id}')">📊</button>
           ${plantelEditMode ? `<button class="btn-mini" title="Modificar jugador/a" onclick="editarPlayer('${p.id}')">✎</button><button class="del-icon" title="Quitar jugador/a" onclick="deletePlayer('${p.id}')">✕</button>` : ''}
@@ -942,7 +974,7 @@ function renderPlantel(){
       ${state.players.some(p=>p.active!==false) ? `
       <div class="table-scroll">
       <table class="plantel-stats-table" style="margin-top:10px;">
-        <thead><tr><th>Jugador/a</th><th class="mobile-stats-head">Estadísticas</th><th>Habilidad</th><th>Especialidad</th><th class="desktop-stat">PJ</th><th class="desktop-stat">G</th><th class="desktop-stat">E</th><th class="desktop-stat">P</th><th class="desktop-stat">⭐</th><th class="desktop-stat">🔻</th><th></th></tr></thead>
+        <thead><tr><th>Jugador/a</th><th>Estadísticas</th><th>Habilidad</th><th>Especialidad</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>` : `<div class="empty">Todavía no cargaste jugadores.</div>`}
       <div class="stats-legend"><span><b>PJ</b> partidos</span><span class="stat-win"><b>G</b> ganados</span><span class="stat-draw"><b>E</b> empatados</span><span class="stat-loss"><b>P</b> perdidos</span><span class="stat-best"><b>⭐</b> destacó</span><span class="stat-worst"><b>🔻</b> costó</span></div>
@@ -950,14 +982,7 @@ function renderPlantel(){
     </div>
 
     ${state.players.some(p=>p.active!==false) ? `
-    <div class="card specialty-examples"><h3>💡 Ejemplos de cómo se usa</h3><p class="desc">La habilidad ⭐ sigue siendo el factor principal. La especialidad aporta un pequeño perfil; no reemplaza ni cambia el puntaje del jugador.</p><div class="specialty-example-grid">
-<div><b>⭐ 8,5 + ⚽ Goleador/a</b><br><span>Mayor aporte ofensivo.</span></div>
-<div><b>⭐ 8,5 + 🛡️ Defensor/a</b><br><span>Mayor aporte defensivo.</span></div>
-<div><b>⭐ 8,5 + 🏃 Corredor/a</b><br><span>Mayor aporte de recorrido.</span></div>
-<div><b>⭐ 8,5 + 🔄 Todo terreno</b><br><span>Aporte equilibrado.</span></div>
-<div><b>⭐ 8,5 + 👟 Pase de primera</b><br><span>Mayor aporte de creación.</span></div>
-<div><b>⭐ 8,5 + Sin especialidad</b><br><span>Se considera principalmente la habilidad.</span></div>
-</div></div><div class="card">
+    <div class="card">
       <h2>Evolución de habilidad</h2>
       <p class="desc">Elegí un jugador o jugadora para ver cómo fue cambiando su habilidad partido a partido.</p>
       <div class="row"><div style="max-width:260px;"><select id="evoSelect">${state.players.filter(p=>p.active!==false).map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('')}</select></div><div style="max-width:140px;"><button class="btn secondary" onclick="mostrarEvolucion()">Ver gráfico</button></div></div>
