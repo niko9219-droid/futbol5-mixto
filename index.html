@@ -376,15 +376,20 @@
 .player-cell{white-space:nowrap}
 .player-name-mobile{font-weight:700}
 .mobile-stats{
-  display:flex;
-  flex-wrap:nowrap;
-  align-items:center;
-  gap:9px;
+  display:table-cell;
+  vertical-align:middle;
   white-space:nowrap;
   font-size:12px;
   line-height:1.2;
+  min-width:0;
 }
-.mobile-stats span{white-space:nowrap}
+.mobile-stats span{
+  display:inline-block;
+  white-space:nowrap;
+  margin-right:9px;
+  vertical-align:middle;
+}
+.mobile-stats span:last-child{margin-right:0}
 .mobile-stats b{font-weight:800}
 .skill-cell{white-space:nowrap}
 .skill-cell .stars{font-size:18px}
@@ -926,6 +931,32 @@ label{color:#D9D7D0}
   .evo-chart-shell svg{
     min-width:620px;
   }
+}
+</style>
+
+<style id="plantel-row-alignment-v17">
+/* Corrección: las estadísticas están dentro del <td>. No deben ser flex,
+   porque eso desengancha visualmente la celda del resto de la fila. */
+.plantel-stats-table{
+  table-layout:fixed;
+}
+.plantel-stats-table th:nth-child(1),.plantel-stats-table td:nth-child(1){width:27%}
+.plantel-stats-table th:nth-child(2),.plantel-stats-table td:nth-child(2){width:36%}
+.plantel-stats-table th:nth-child(3),.plantel-stats-table td:nth-child(3){width:16%}
+.plantel-stats-table th:nth-child(4),.plantel-stats-table td:nth-child(4){width:10%}
+.plantel-stats-table th:nth-child(5),.plantel-stats-table td:nth-child(5){width:11%}
+.plantel-stats-table tbody tr{height:76px}
+.plantel-stats-table td{height:76px;box-sizing:border-box}
+.player-cell,.mobile-stats{vertical-align:middle!important}
+
+@media(max-width:700px){
+  .plantel-stats-table{table-layout:fixed;min-width:690px}
+  .plantel-stats-table th:nth-child(1),.plantel-stats-table td:nth-child(1){width:27%;min-width:185px}
+  .plantel-stats-table th:nth-child(2),.plantel-stats-table td:nth-child(2){width:36%;min-width:245px}
+  .plantel-stats-table th:nth-child(3),.plantel-stats-table td:nth-child(3){width:16%;min-width:105px}
+  .plantel-stats-table th:nth-child(4),.plantel-stats-table td:nth-child(4){width:10%;min-width:72px}
+  .plantel-stats-table th:nth-child(5),.plantel-stats-table td:nth-child(5){width:11%;min-width:80px}
+  .plantel-stats-table tbody tr,.plantel-stats-table td{height:76px}
 }
 </style>
 </head>
