@@ -150,18 +150,26 @@
 
   .check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px;}
   .check-item{
-    display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;
-    background:#fff;border:1px solid #CFC8B2;border-radius:10px;padding:10px 11px;
-    font-size:13.5px;cursor:pointer;min-width:0;transition:border-color .15s,box-shadow .15s,background .15s;
+    display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:9px;
+    background:#111412;border:1px solid rgba(214,164,63,.20);border-radius:11px;padding:10px 12px;
+    color:#F0EEE8;font-size:14px;cursor:pointer;min-width:0;
+    transition:border-color .15s,box-shadow .15s,background .15s,transform .12s;
   }
-  .check-item:hover{border-color:#9DAF9F;box-shadow:0 2px 8px rgba(20,50,30,.07);background:#fffefa;}
-  .check-item input{width:17px;height:17px;margin:0;accent-color:var(--verde-cancha);}
-  .check-player-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+  .check-item:hover{
+    border-color:rgba(214,164,63,.55);box-shadow:0 5px 16px rgba(0,0,0,.25);
+    background:#171A17;transform:translateY(-1px);
+  }
+  .check-item input{width:17px;height:17px;margin:0;accent-color:#D6A43F;}
+  .check-player-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;color:#F1EFE8;}
+  .check-item .club-avatar{width:32px;height:32px;min-width:32px;}
   .check-item .stars{font-size:14px;white-space:nowrap;display:inline-flex;flex-shrink:0;letter-spacing:-1px;}
   .check-item .rating-compact{justify-self:end;min-width:58px;justify-content:flex-end;}
   .check-item .rating-compact .rating-star{font-size:16px;}
-  .check-item:has(input:checked){border-color:#7E9F87;background:#F6FBF7;box-shadow:0 0 0 2px rgba(31,107,63,.08);}
-  .selection-complete .check-item:not(:has(input:checked)){opacity:.42;}
+  .check-item:has(input:checked){
+    border-color:#D6A43F;background:linear-gradient(145deg,#1B1A14,#11130F);
+    box-shadow:0 0 0 1px rgba(214,164,63,.22),0 6px 18px rgba(0,0,0,.20);
+  }
+  .selection-complete .check-item:not(:has(input:checked)){opacity:.38;}
   .selection-complete .check-item:not(:has(input:checked)) input{cursor:not-allowed;}
   .armar-result-screen{margin-top:0;}
   .armar-result-screen .teams-wrap{margin-top:12px;}
@@ -571,13 +579,362 @@
   }
 }
 </style>
+
+<style id="avatar-system-v2">
+.avatar-add-box{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 14px;margin:4px 0 14px;
+  border:1px solid rgba(214,164,63,.28);
+  border-radius:12px;background:rgba(255,255,255,.03);
+}
+.avatar-preview-wrap{flex:0 0 auto}
+.avatar-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.avatar-controls label{font-weight:700}
+.avatar-controls select{min-width:300px}
+.avatar-controls small{color:var(--tinta-suave)}
+.player-avatar{
+  width:38px;height:38px;min-width:38px;
+  display:inline-block;
+  border-radius:50%;overflow:hidden;
+  background:linear-gradient(180deg,var(--avatar-c1) 0 33.333%,var(--avatar-c2) 33.333% 66.666%,var(--avatar-c3) 66.666% 100%);
+  border:2px solid rgba(255,255,255,.78);
+  box-shadow:0 0 0 1px rgba(0,0,0,.42),0 2px 8px rgba(0,0,0,.3);
+  vertical-align:middle;
+}
+.player-avatar.preview{width:54px;height:54px;min-width:54px}
+.player-cell{display:flex!important;align-items:center;gap:7px}
+.team-player .player-avatar{width:32px;height:32px;min-width:32px}
+.team-player{display:flex!important;align-items:center;gap:8px}
+.team-player-name{flex:1;min-width:0}
+@media(max-width:700px){
+  .avatar-add-box{align-items:flex-start}
+  .avatar-controls{display:grid;grid-template-columns:1fr;flex:1}
+  .avatar-controls select{width:100%;min-width:0}
+  .avatar-controls small{font-size:11px}
+  .player-avatar{width:34px;height:34px;min-width:34px}
+}
+</style>
+
+<style id="premium-dark-v1">
+:root{
+  --verde-cancha:#070908;
+  --verde-oscuro:#0D100E;
+  --verde-claro:#D6A43F;
+  --tiza:#F1EFE8;
+  --tiza-oscura:#171916;
+  --tinta:#F1EFE8;
+  --tinta-suave:#A9ACA4;
+  --linea:rgba(214,164,63,.22);
+  --radio:14px;
+  --sombra:0 12px 34px rgba(0,0,0,.42);
+}
+body{
+  background:
+    radial-gradient(circle at 50% -10%,rgba(214,164,63,.12),transparent 34%),
+    linear-gradient(180deg,#090B0A 0%,#050605 100%);
+  color:var(--tinta);
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;
+  background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px);
+  background-size:100% 44px;
+}
+.wrap{max-width:980px;padding:24px 18px 88px}
+header.hero{padding:18px 4px 28px}
+.eyebrow{color:#D6A43F}
+h1.title{color:#F3F0E8;text-shadow:0 2px 16px rgba(214,164,63,.10)}
+.subtitle{color:#92978F}
+.stats-row{gap:10px}
+.stat{
+  background:linear-gradient(145deg,#121512,#0B0D0C)!important;
+  border:1px solid rgba(214,164,63,.22)!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.22)!important;
+  color:#F2EFE7!important;
+}
+.stat .n{color:#F0C96A}
+.data-bar{border-top:1px solid rgba(214,164,63,.12);padding-top:12px}
+nav.tabs{
+  background:rgba(8,10,9,.82);
+  border:1px solid rgba(214,164,63,.14);
+  border-radius:14px;
+  padding:7px;
+  box-shadow:0 10px 25px rgba(0,0,0,.28);
+}
+nav.tabs button{
+  background:transparent!important;
+  color:#B9BCB5!important;
+  border:1px solid transparent!important;
+}
+nav.tabs button:hover{background:rgba(214,164,63,.08)!important;color:#F4E5BE!important}
+nav.tabs button.active{
+  background:#D6A43F!important;
+  color:#11130F!important;
+  border-color:#D6A43F!important;
+  box-shadow:0 5px 14px rgba(214,164,63,.18);
+}
+.card{
+  background:linear-gradient(145deg,#151815,#0E100F)!important;
+  color:#F1EFE8!important;
+  border:1px solid rgba(214,164,63,.16);
+  box-shadow:0 14px 36px rgba(0,0,0,.34);
+}
+.card .desc,.subtitle{color:#9EA29A!important}
+.card h2{color:#F3EFE5}
+input,select,textarea{
+  background:#0A0C0B!important;
+  color:#F0EEE8!important;
+  border:1px solid rgba(214,164,63,.28)!important;
+}
+input::placeholder,textarea::placeholder{color:#666C65}
+label{color:#D9D7D0}
+.btn{
+  background:#D6A43F!important;
+  color:#11130F!important;
+  border:1px solid #D6A43F!important;
+  box-shadow:0 6px 16px rgba(214,164,63,.12);
+}
+.btn.secondary{
+  background:#111412!important;
+  color:#E8E3D7!important;
+  border:1px solid rgba(214,164,63,.35)!important;
+}
+.btn:hover{filter:brightness(1.08)}
+.add-player-card,.edit-teams-box,.global-balance,.specialty-help,.msg{
+  background:rgba(255,255,255,.025)!important;
+  border-color:rgba(214,164,63,.18)!important;
+}
+.specialty-help strong{color:#E8C46C}
+.player-stats-table{
+  color:#EDEAE2;
+}
+.plantel-stats-table thead th{color:#B9A36D!important}
+.plantel-stats-table tbody tr{border-color:rgba(255,255,255,.08)!important}
+.mobile-stats{color:#BFC1BA}
+.team-col{
+  background:#101310!important;
+  border:1px solid rgba(214,164,63,.22)!important;
+  color:#F2EFE7!important;
+}
+.team-col.A{
+  background:linear-gradient(145deg,#241214,#11100F)!important;
+  border-color:rgba(176,49,57,.55)!important;
+}
+.team-col.B{
+  background:linear-gradient(145deg,#151715,#0F110F)!important;
+}
+.team-col h3{color:#E6C76F!important}
+.team-player{border-color:rgba(255,255,255,.08)!important}
+.global-balance{
+  border:1px solid rgba(214,164,63,.28)!important;
+  color:#E9E4D7!important;
+}
+.global-balance strong{color:#EBC76B}
+.foot{color:#777C75}
+.save-toast{background:#D6A43F!important;color:#11130F!important}
+.avatar-add-box{background:rgba(214,164,63,.035)!important}
+.avatar-controls small{color:#888E86!important}
+.btn-mini{
+  background:#121513!important;color:#E9E5DA!important;
+  border-color:rgba(214,164,63,.28)!important;
+}
+.btn-mini:hover{background:#1B1F1B!important}
+.del-icon{color:#E06B6B!important}
+.historial-result .red{background:#7D2027!important}
+.historial-result .white{background:#181A18!important;color:#EDEAE2!important;border-color:rgba(214,164,63,.22)!important}
+.pending-kpi{border-color:#D6A43F!important}
+@media(max-width:700px){
+  .wrap{padding:14px 12px 78px}
+  header.hero{padding-top:10px}
+  nav.tabs{margin-left:-2px;margin-right:-2px}
+  .card{padding:18px}
+}
+</style>
+
+<style id="avatar-club-v3">
+.avatar-controls select{
+  font-weight:700;
+  letter-spacing:.01em;
+}
+.avatar-controls select option{
+  background:#0A0C0B;
+  color:#F0EEE8;
+  padding:8px;
+}
+.avatar-preview-wrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+}
+.avatar-preview-wrap:after{
+  content:'AVATAR';
+  font-size:9px;
+  letter-spacing:.12em;
+  color:#8C918A;
+}
+</style>
+
+<style id="armar-premium-fix-v14">
+.armar-selection-card .check-item .rating-compact{
+  color:#E8C76A!important;
+}
+.armar-selection-card .check-item .rating-star{
+  color:#D6A43F!important;
+}
+.armar-selection-card .check-item .rating-star.empty{
+  color:#4A4D47!important;
+}
+.armar-selection-card .check-item .gender-tag{
+  color:#111!important;
+}
+@media(max-width:700px){
+  .armar-selection-card .check-grid{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  .armar-selection-card .check-item{
+    min-height:52px;
+    padding:9px 10px;
+  }
+}
+</style>
+
+<style id="armar-header-polish-v14">
+.armar-selection-card h2{color:#F3EFE5;font-size:28px;}
+.armar-selection-card>.desc{color:#9FA49C!important;}
+.armar-selection-card .select-tools .btn.secondary{
+  background:#101310!important;
+  border-color:rgba(214,164,63,.30)!important;
+  color:#E9E5DB!important;
+}
+.armar-selection-card .select-tools .btn.secondary:hover{
+  background:#1A1D19!important;border-color:#D6A43F!important;
+}
+.armar-actions #seleccionCount{color:#B9BDB5!important;}
+</style>
+
+<style id="premium-header-v15">
+.hero .eyebrow{
+  color:#D6A43F;
+  font-size:13px;
+  letter-spacing:.16em;
+  margin-bottom:3px;
+}
+.hero .title{
+  font-size:clamp(44px,8vw,64px);
+  letter-spacing:.025em;
+  margin-bottom:5px;
+  color:#F3EFE5;
+}
+.hero .subtitle{
+  max-width:620px;
+  color:rgba(245,242,233,.70);
+}
+.hero .stats-row{
+  gap:9px;
+  align-items:stretch;
+}
+.hero .stat{
+  min-width:108px;
+  padding:10px 13px;
+  background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.025));
+  border-color:rgba(214,164,63,.20);
+}
+.hero .stat .n{
+  color:#F3EFE5;
+}
+.hero .stat .l{
+  color:rgba(245,242,233,.58);
+  font-size:10.5px;
+}
+.hero .pending-kpi{
+  border-color:rgba(214,164,63,.65);
+  background:linear-gradient(145deg,rgba(214,164,63,.19),rgba(214,164,63,.07));
+  cursor:pointer;
+  transition:transform .15s,box-shadow .15s,border-color .15s;
+}
+.hero .pending-kpi:hover{
+  transform:translateY(-1px);
+  border-color:#D6A43F;
+  box-shadow:0 5px 18px rgba(214,164,63,.14);
+}
+.hero .pending-kpi .n{
+  color:#E8C96A;
+}
+.hero .data-bar{
+  margin-top:13px;
+}
+.hero .data-bar .btn{
+  border-radius:10px;
+}
+.hero .data-bar .btn.secondary{
+  color:#E9E5DB;
+  border-color:rgba(214,164,63,.35);
+}
+.hero .data-bar .btn.secondary:hover{
+  background:rgba(214,164,63,.10);
+  border-color:#D6A43F;
+}
+@media(max-width:650px){
+  .hero .stats-row{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .hero .stat{
+    min-width:0;
+  }
+  .hero .pending-kpi{
+    grid-column:1/-1;
+  }
+}
+</style>
+
+<style id="evo-premium-v16">
+.evo-chart-shell{
+  position:relative;
+  margin-top:4px;
+  padding:6px 8px 0;
+  border:1px solid rgba(214,164,63,.10);
+  border-radius:14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.005));
+}
+.evo-chart-shell svg{display:block}
+.evo-current{
+  position:absolute;
+  right:16px;
+  top:14px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:1px;
+  color:#858B84;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.evo-current strong{
+  color:#E6C36B;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:19px;
+  letter-spacing:.03em;
+}
+@media(max-width:700px){
+  .evo-chart-shell{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .evo-chart-shell svg{
+    min-width:620px;
+  }
+}
+</style>
 </head>
 <body>
 <div class="wrap">
   <header class="hero">
     <div class="eyebrow">Liga interna · Fútbol 5 mixto</div>
-    <h1 class="title">ARMADO DE EQUIPOS</h1>
-    <p class="subtitle">Cargá el plantel, definí las reglas y generá equipos parejos en segundos. Después de jugar, un solo click carga el resultado y ajusta la habilidad de cada jugador.</p>
+    <h1 class="title">F5 MANAGER</h1>
+    <p class="subtitle">Armá equipos equilibrados. Jugá. Registrá el resultado y hacé evolucionar el plantel.</p>
     <div class="stats-row" id="statsRow"></div>
     <div class="data-bar">
       <button class="btn secondary small" onclick="document.getElementById('excelInput').click()">📥 Importar Excel</button>
@@ -591,8 +948,8 @@
 
   <nav class="tabs" id="tabs">
     <button data-tab="plantel" class="active">🏠 Inicio</button>
-    <button data-tab="armar">Armar partido</button>
-    <button data-tab="resultado">Cargar resultado</button>
+    <button data-tab="armar">⚽ Armar partido</button>
+    <button data-tab="resultado">✓ Cargar resultado</button>
     <button data-tab="historial">Historial</button>
     <button data-tab="reglas">Reglas</button>
   </nav>
@@ -612,6 +969,46 @@ function nombreVisible(p){
   return `${p.name}${p.apodo ? ` (${p.apodo})` : ''}`;
 }
 function nombreCorto(p){ return p ? nombreVisible(p) : ''; }
+
+const AVATARES_PREDEFINIDOS = [
+  {value:'sinclub', label:'Sin club', emoji:'⚪ ⚪ ⚪', desc:'sin colores de club', c1:'#A7AAA5', c2:'#E8E7E0', c3:'#A7AAA5'},
+  {value:'river', label:'River Plate', emoji:'⚪ 🔴 ⚪', desc:'blanco · rojo · blanco', c1:'#F7F7F4', c2:'#D71920', c3:'#F7F7F4'},
+  {value:'boca', label:'Boca Juniors', emoji:'🟡 🔵 🟡', desc:'amarillo · azul · amarillo', c1:'#F4C400', c2:'#123C78', c3:'#F4C400'},
+  {value:'independiente', label:'Independiente', emoji:'🔴 🔴 🔴', desc:'rojo · rojo · rojo', c1:'#D71920', c2:'#B90F19', c3:'#D71920'},
+  {value:'racing', label:'Racing Club', emoji:'🔵 ⚪ 🔵', desc:'celeste · blanco · celeste', c1:'#72B8E8', c2:'#F7F7F4', c3:'#72B8E8'},
+  {value:'sanlorenzo', label:'San Lorenzo', emoji:'🔵 🔴 🔵', desc:'azul · rojo · azul', c1:'#173F8A', c2:'#D71920', c3:'#173F8A'},
+  {value:'huracan', label:'Huracán', emoji:'⚪ 🔴 ⚪', desc:'blanco · rojo · blanco', c1:'#F7F7F4', c2:'#D71920', c3:'#F7F7F4'},
+  {value:'velez', label:'Vélez', emoji:'⚪ 🔵 ⚪', desc:'blanco · azul · blanco', c1:'#F7F7F4', c2:'#21468B', c3:'#F7F7F4'},
+  {value:'estudiantes', label:'Estudiantes', emoji:'🔴 ⚪ 🔴', desc:'rojo · blanco · rojo', c1:'#D71920', c2:'#F7F7F4', c3:'#D71920'},
+  {value:'gimnasia', label:'Gimnasia', emoji:'🔵 ⚪ 🔵', desc:'azul · blanco · azul', c1:'#2E5B9A', c2:'#F7F7F4', c3:'#2E5B9A'},
+  {value:'rosariocentral', label:'Rosario Central', emoji:'🟡 🔵 🟡', desc:'amarillo · azul · amarillo', c1:'#F4C400', c2:'#1682B7', c3:'#F4C400'},
+  {value:'newells', label:"Newell's", emoji:'🔴 ⚫ 🔴', desc:'rojo · negro · rojo', c1:'#D71920', c2:'#171717', c3:'#D71920'},
+  {value:'talleres', label:'Talleres', emoji:'🔵 ⚪ 🔵', desc:'azul · blanco · azul', c1:'#1E5AA8', c2:'#F7F7F4', c3:'#1E5AA8'},
+  {value:'lanus', label:'Lanús', emoji:'🔴 ⚪ 🔴', desc:'granate · blanco · granate', c1:'#7B1E2B', c2:'#F7F7F4', c3:'#7B1E2B'},
+  {value:'banfield', label:'Banfield', emoji:'🟢 ⚪ 🟢', desc:'verde · blanco · verde', c1:'#087443', c2:'#F7F7F4', c3:'#087443'},
+  {value:'argentinos', label:'Argentinos Juniors', emoji:'🔴 ⚪ 🔴', desc:'rojo · blanco · rojo', c1:'#D71920', c2:'#F7F7F4', c3:'#D71920'},
+  {value:'belgrano', label:'Belgrano', emoji:'🔵 ⚪ 🔵', desc:'celeste · blanco · celeste', c1:'#65B5E5', c2:'#F7F7F4', c3:'#65B5E5'},
+  {value:'union', label:'Unión', emoji:'🔴 ⚪ 🔴', desc:'rojo · blanco · rojo', c1:'#D71920', c2:'#F7F7F4', c3:'#D71920'},
+  {value:'colon', label:'Colón', emoji:'🔴 ⚫ 🔴', desc:'rojo · negro · rojo', c1:'#D71920', c2:'#171717', c3:'#D71920'}
+];
+function avatarInfo(p){
+  let tipo=p?.avatarTipo || 'sinclub';
+  let preset=AVATARES_PREDEFINIDOS.find(a=>a.value===tipo);
+  // Compatibilidad: jugadores de versiones anteriores sin avatar reciben el avatar neutral.
+  if(!preset) preset=AVATARES_PREDEFINIDOS[0];
+  return {tipo:'club', value:preset.value, c1:preset.c1, c2:preset.c2, c3:preset.c3, label:preset.label, emoji:preset.emoji};
+}
+function avatarHTML(p, cls='player-avatar'){
+  const a=avatarInfo(p);
+  return `<span class="${cls} club-avatar" title="${a.label}" style="--avatar-c1:${a.c1};--avatar-c2:${a.c2};--avatar-c3:${a.c3};"></span>`;
+}
+function actualizarAvatarPreview(){
+  const sel=document.getElementById('newAvatarTipo');
+  const preview=document.getElementById('newAvatarPreview');
+  if(!sel || !preview) return;
+  preview.outerHTML=avatarHTML({avatarTipo:sel.value, avatarValor:''},'player-avatar preview');
+}
+
 function fuerzaGlobal(teamA, teamB){
   const todos=[...(teamA||[]),...(teamB||[])];
   if(!todos.length) return 0;
@@ -848,7 +1245,7 @@ function importarExcel(event){
         const p={
           id, name:String(r.Nombre||'Jugador '+(i+1)), apodo:String(r.Apodo||''),
           gender:String(r.Genero||'M').toUpperCase()==='F'?'F':'M',
-          skill:Math.max(1,Math.min(10,skill)), matchesPlayed:Number(r.PartidosJugados||0), active:String(r.Activo||'Si').toLowerCase()!=='no',
+          skill:Math.max(1,Math.min(10,skill)), matchesPlayed:Number(r.PartidosJugados||0), avatarTipo:AVATARES_PREDEFINIDOS.some(a=>a.value===String(r.AvatarTipo||'sinclub')) ? String(r.AvatarTipo||'sinclub') : 'sinclub', avatarValor:'', active:String(r.Activo||'Si').toLowerCase()!=='no',
           esArquero:String(r.Arquero||'No').toLowerCase()==='si', skillHistory:[]
         };
         jugadoresMap[id]=p; return p;
@@ -911,7 +1308,7 @@ function importarExcel(event){
 function exportarExcel(){
   if(!loaded){ alert('Primero cargá un Excel o armá una base desde 0.'); return; }
   const wb=XLSX.utils.book_new();
-  const jugadores=state.players.map(p=>({ID:p.id,Nombre:p.name,Apodo:p.apodo||'',Genero:p.gender,Habilidad:Number(p.skill.toFixed(2)),Arquero:p.esArquero?'Si':'No',PartidosJugados:p.matchesPlayed||0,Activo:p.active===false?'No':'Si'}));
+  const jugadores=state.players.map(p=>({ID:p.id,Nombre:p.name,Apodo:p.apodo||'',Genero:p.gender,Habilidad:Number(p.skill.toFixed(2)),Arquero:p.esArquero?'Si':'No',AvatarTipo:p.avatarTipo||'inicial',AvatarValor:p.avatarValor||'',PartidosJugados:p.matchesPlayed||0,Activo:p.active===false?'No':'Si'}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(jugadores),'Jugadores');
   const reglas=state.forbiddenPairs.map(([a,b])=>{const pa=state.players.find(p=>p.id===a),pb=state.players.find(p=>p.id===b);return {JugadorA_ID:a,JugadorA:pa?.name||'',JugadorB_ID:b,JugadorB:pb?.name||'',Regla:'Nunca juntos'};});
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reglas),'Reglas');
@@ -987,7 +1384,7 @@ function renderStats(){
   const kpiPendiente = pendientes.length ? `
     <button type="button" class="stat pending-kpi pending-kpi-btn" onclick="abrirPartidosPendientes()" title="Ver partidos pendientes">
       <div class="n">${pendientes.length}</div>
-      <div class="l">Partido${pendientes.length>1?'s':''} pendiente${pendientes.length>1?'s':''}</div>
+      <div class="l">Pendiente${pendientes.length>1?'s':''} · ver partido${pendientes.length>1?'s':''} →</div>
     </button>` : '';
   document.getElementById('statsRow').innerHTML = `
     <div class="stat"><div class="n">${totalJugadores}</div><div class="l">Jugadores</div></div>
@@ -1104,7 +1501,7 @@ function renderPlantel(){
       return `
       <tr>
         <td class="player-cell">
-          <span class="player-name-mobile">${p.apodo || p.name}</span>
+          ${avatarHTML(p)}<span class="player-name-mobile">${p.apodo || p.name}</span>
           <span class="gender-tag ${p.gender}">${genderLabel(p.gender)}</span>
           ${p.esArquero ? `<span class="gk-badge-toggle on" style="cursor:default;">🧤</span>` : ''}
         </td>
@@ -1135,6 +1532,16 @@ function renderPlantel(){
       <div class="add-player-body">
         <div class="specialty-help"><strong>🎯 Habilidad especial</strong><span>Elegí la característica que mejor representa cómo juega habitualmente. Complementa la ⭐ habilidad general y tiene un peso menor en el armado.</span></div>
         <p class="desc">El puntaje inicial es una estimación tuya de 1 a 10. Este número queda oculto y se muestra con hasta 5 estrellas, incluyendo medias estrellas. Se va a ir ajustando solo después de cada partido.</p>
+      <div class="avatar-add-box">
+        <div class="avatar-preview-wrap"><span id="newAvatarPreview" class="player-avatar preview">?</span></div>
+        <div class="avatar-controls">
+          <label>Avatar del jugador/a</label>
+          <select id="newAvatarTipo" onchange="actualizarAvatarPreview()">
+            ${AVATARES_PREDEFINIDOS.map(a=>`<option value="${a.value}">${a.emoji} — ${a.label}</option>`).join('')}
+          </select>
+          <small>Elegí los colores de un club del fútbol argentino para identificar al jugador/a.</small>
+        </div>
+      </div>
       <div class="row player-add-row">
         <div><label>Nombre</label><input type="text" id="newName" placeholder="Ej: Camila"></div>
         <div><label>Apodo (opcional)</label><input type="text" id="newApodo" placeholder="Ej: Cami"></div>
@@ -1178,6 +1585,7 @@ function addPlayer(){
   const skill = parseFloat(document.getElementById('newSkill').value) || 6;
   const esArquero = document.getElementById('newArquero').value === 'si';
   const habilidadEspecial = document.getElementById('newEspecial')?.value || '';
+  const avatarTipo = document.getElementById('newAvatarTipo')?.value || 'inicial';
   if(!name){ alert('Poné un nombre.'); return; }
   const duplicadoExacto = state.players.some(p=>p.active!==false &&
     p.name.toLowerCase()===name.toLowerCase() && (p.apodo||'').toLowerCase()===(apodo||'').toLowerCase()
@@ -1188,9 +1596,11 @@ function addPlayer(){
   const skillClamp = Math.min(10,Math.max(1,skill));
   state.players.push({
     id:uid(), name, apodo, gender, skill:skillClamp, matchesPlayed:0, active:true, esArquero, habilidadEspecial,
+    avatarTipo, avatarValor:'',
     skillHistory: [{date: new Date().toISOString(), skill: skillClamp}]
   });
   saveState();
+  renderPlantel(); renderStats();
   renderPlantel(); renderStats();
 }
 
@@ -1207,35 +1617,87 @@ function dibujarEvolucion(p){
   if(hist.length < 2){
     return `<p class="desc">${p.name} todavía no tiene suficientes partidos cargados para graficar la evolución.</p>`;
   }
-  const w=700, h=220, padL=42, padR=24, padT=22, padB=48;
+
+  // El primer punto es la habilidad inicial; a partir de ahí cada punto
+  // representa exclusivamente un partido jugado: P1, P2, P3...
+  const w=760, h=260, padL=48, padR=30, padT=24, padB=48;
   const min=1, max=10;
   const stepX = hist.length===1 ? 0 : (w-padL-padR)/(hist.length-1);
   const scaleY = v => h-padB - ((v-min)/(max-min))*(h-padT-padB);
-  const pts = hist.map((pt,i)=>({x: padL+i*stepX, y: scaleY(pt.skill), v: pt.skill, date: pt.date}));
+  const pts = hist.map((pt,i)=>({
+    x: padL+i*stepX,
+    y: scaleY(pt.skill),
+    v: pt.skill,
+    date: pt.date,
+    match:i
+  }));
   const polyline = pts.map(pt=>`${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ');
+
   const labels = pts.map((pt,i)=>{
-    const etiqueta = i===0 ? 'Inicial' : `P${i}`;
+    const etiqueta = i===0 ? '' : `P${i}`;
     const fecha = new Date(pt.date).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
-    return `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4" fill="#1F6B3F">
-      <title>${etiqueta} · ${fecha} · ${estrellas(pt.v)}</title>
-    </circle>
-    <text x="${pt.x.toFixed(1)}" y="${(h-padB+17).toFixed(1)}" font-size="10" fill="#4B5B50" font-family="Work Sans" text-anchor="middle">${etiqueta}</text>
-    <text x="${pt.x.toFixed(1)}" y="${(pt.y-9).toFixed(1)}" font-size="9" fill="#4B5B50" font-family="Work Sans" text-anchor="middle">${estrellas(pt.v)}</text>`;
+    const labelX = pt.x.toFixed(1);
+    const yLabel = (h-padB+25).toFixed(1);
+    return `
+      <circle cx="${labelX}" cy="${pt.y.toFixed(1)}" r="${i===hist.length-1?'5':'4'}"
+        fill="#D6A43F" stroke="#0D100E" stroke-width="2">
+        <title>${i===0 ? 'Habilidad inicial' : etiqueta} · ${fecha} · ${pt.v.toFixed(1)}/10</title>
+      </circle>
+      ${etiqueta ? `<text x="${labelX}" y="${yLabel}" font-size="11" font-weight="700" fill="#C8C9C3" font-family="Work Sans" text-anchor="middle">${etiqueta}</text>` : ''}
+    `;
   }).join('');
+
   const gridLines = [2,4,6,8,10].map(v=>`
-    <line x1="${padL}" y1="${scaleY(v).toFixed(1)}" x2="${w-padR}" y2="${scaleY(v).toFixed(1)}" stroke="#E7E2D3" stroke-width="1"/>
-    <text x="6" y="${(scaleY(v)+4).toFixed(1)}" font-size="10" fill="#4B5B50" font-family="Work Sans">${(v/2).toFixed(1)}★</text>
+    <line x1="${padL}" y1="${scaleY(v).toFixed(1)}" x2="${w-padR}" y2="${scaleY(v).toFixed(1)}"
+      stroke="rgba(214,164,63,.16)" stroke-width="1"/>
+    <text x="5" y="${(scaleY(v)+4).toFixed(1)}" font-size="10"
+      fill="#777D76" font-family="Work Sans">${(v/2).toFixed(1)}★</text>
   `).join('');
+
+  const gradientId = `evoGradient_${p.id}`;
+  const areaPoints = `${pts[0].x.toFixed(1)},${(h-padB).toFixed(1)} ${polyline} ${pts[pts.length-1].x.toFixed(1)},${(h-padB).toFixed(1)}`;
+
   return `
-  <svg viewBox="0 0 ${w} ${h}" width="100%" height="230" style="margin-top:10px;overflow:visible;">
-    ${gridLines}
-    <polyline points="${polyline}" fill="none" stroke="#1F6B3F" stroke-width="2.5"/>
-    ${labels}
-  </svg>`;
+  <div class="evo-chart-shell">
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="270" style="margin-top:8px;overflow:visible;" role="img" aria-label="Evolución de habilidad de ${nombreVisible(p)}">
+      <defs>
+        <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#D6A43F" stop-opacity=".18"/>
+          <stop offset="100%" stop-color="#D6A43F" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      ${gridLines}
+      <polygon points="${areaPoints}" fill="url(#${gradientId})"/>
+      <polyline points="${polyline}" fill="none" stroke="#D6A43F" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round"/>
+      ${labels}
+    </svg>
+    <div class="evo-current">
+      <span>Habilidad actual</span>
+      <strong>${p.skill.toFixed(1)} / 10</strong>
+    </div>
+  </div>`;
 }
+
 function toggleArquero(id){
   const p = state.players.find(x=>x.id===id);
   if(p){ p.esArquero = !p.esArquero; saveState(); renderPlantel(); }
+}
+
+function cambiarAvatarJugador(id){
+  const p=state.players.find(x=>x.id===id);
+  if(!p) return;
+  const opciones=AVATARES_PREDEFINIDOS.map((a,i)=>`${i+1}. ${a.emoji} — ${a.label}`).join('\n');
+  const eleccion=prompt(`Elegí avatar para ${nombreVisible(p)}:\n\n${opciones}\n\nEscribí 1-${AVATARES_PREDEFINIDOS.length}.`, '');
+  if(eleccion===null) return;
+  const n=Number(eleccion);
+  if(n>=1 && n<=AVATARES_PREDEFINIDOS.length){
+    p.avatarTipo=AVATARES_PREDEFINIDOS[n-1].value;
+    p.avatarValor='';
+    saveState(); renderPlantel(); renderStats();
+    return;
+  }
+  alert('Elegí una opción válida.');
 }
 
 function editarPlayer(id){
@@ -1353,6 +1815,7 @@ function renderArmar(){
   const items = state.players.filter(p=>p.active!==false).map(p=>`
     <label class="check-item ${seleccionHoy.has(p.id)?'selected':''}">
       <input type="checkbox" value="${p.id}" ${seleccionHoy.has(p.id)?'checked':''} ${selectionFull && !seleccionHoy.has(p.id)?'disabled':''} onchange="toggleSeleccion('${p.id}', this.checked)">
+      ${avatarHTML(p,'player-avatar club-avatar')}
       <span class="check-player-name">${nombreVisible(p)}${p.esArquero?' 🧤':''}</span>
       ${ratingCompact(p.skill)}
     </label>
@@ -1566,8 +2029,8 @@ function renderEditorEquipos(){
   const diff = Math.abs(forceA-forceB);
   const rawA = promedioHabilidad(teamA);
   const rawB = promedioHabilidad(teamB);
-  const listA = teamA.map(p=>`<li class="team-player" draggable="true" ondragstart="arrastrarJugador(event,'${p.id}')" ondragover="event.preventDefault()" ondrop="soltarJugador(event,'${p.id}')"><span>${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span>${ratingCompact(p.skill)}</span></li>`).join('');
-  const listB = teamB.map(p=>`<li class="team-player" draggable="true" ondragstart="arrastrarJugador(event,'${p.id}')" ondragover="event.preventDefault()" ondrop="soltarJugador(event,'${p.id}')"><span>${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span>${ratingCompact(p.skill)}</span></li>`).join('');
+  const listA = teamA.map(p=>`<li class="team-player" draggable="true" ondragstart="arrastrarJugador(event,'${p.id}')" ondragover="event.preventDefault()" ondrop="soltarJugador(event,'${p.id}')">${avatarHTML(p)}<span class="team-player-name">${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span>${ratingCompact(p.skill)}</span></li>`).join('');
+  const listB = teamB.map(p=>`<li class="team-player" draggable="true" ondragstart="arrastrarJugador(event,'${p.id}')" ondragover="event.preventDefault()" ondrop="soltarJugador(event,'${p.id}')">${avatarHTML(p)}<span class="team-player-name">${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span>${ratingCompact(p.skill)}</span></li>`).join('');
   const optsA = `<option value="">— Elegí jugador —</option>` + teamA.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
   const optsB = `<option value="">— Elegí reemplazo —</option>` + teamB.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
   const optsB2 = `<option value="">— Elegí jugador —</option>` + teamB.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
