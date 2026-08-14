@@ -959,6 +959,166 @@ label{color:#D9D7D0}
   .plantel-stats-table tbody tr,.plantel-stats-table td{height:76px}
 }
 </style>
+
+<style id="plantel-mobile-separated-v18">
+/* ===== PLANTEL: filas realmente separadas en celular ===== */
+@media (max-width:700px){
+  .table-scroll{
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    width:100%!important;
+    padding-bottom:8px;
+  }
+
+  .plantel-stats-table{
+    display:block!important;
+    width:max-content!important;
+    min-width:0!important;
+    table-layout:auto!important;
+    border-collapse:separate!important;
+    border-spacing:0!important;
+  }
+
+  .plantel-stats-table thead{
+    display:block!important;
+    width:max-content!important;
+  }
+
+  .plantel-stats-table thead tr{
+    display:grid!important;
+    grid-template-columns:210px 285px 120px 110px 95px!important;
+    width:820px!important;
+    min-width:820px!important;
+  }
+
+  .plantel-stats-table tbody{
+    display:block!important;
+    width:max-content!important;
+  }
+
+  .plantel-stats-table tbody tr{
+    display:grid!important;
+    grid-template-columns:210px 285px 120px 110px 95px!important;
+    width:820px!important;
+    min-width:820px!important;
+    height:86px!important;
+    min-height:86px!important;
+    box-sizing:border-box!important;
+    border-bottom:1px solid rgba(214,164,63,.14)!important;
+  }
+
+  .plantel-stats-table th,
+  .plantel-stats-table td{
+    display:flex!important;
+    align-items:center!important;
+    box-sizing:border-box!important;
+    width:auto!important;
+    min-width:0!important;
+    height:86px!important;
+    min-height:86px!important;
+    padding:10px 12px!important;
+    margin:0!important;
+    overflow:hidden!important;
+    vertical-align:middle!important;
+  }
+
+  .plantel-stats-table th{
+    height:48px!important;
+    min-height:48px!important;
+    font-size:11px!important;
+  }
+
+  .plantel-stats-table thead tr{
+    height:48px!important;
+    min-height:48px!important;
+  }
+
+  .plantel-stats-table .player-cell{
+    gap:9px!important;
+    white-space:nowrap!important;
+  }
+
+  .plantel-stats-table .player-cell .player-avatar{
+    flex:0 0 46px!important;
+    width:46px!important;
+    height:46px!important;
+    min-width:46px!important;
+    min-height:46px!important;
+  }
+
+  .plantel-stats-table .player-name-mobile{
+    display:block!important;
+    min-width:0!important;
+    max-width:125px!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+
+  .plantel-stats-table .gender-tag{
+    flex:0 0 auto!important;
+    margin-left:0!important;
+  }
+
+  .plantel-stats-table .mobile-stats{
+    display:flex!important;
+    align-items:center!important;
+    flex-wrap:nowrap!important;
+    gap:8px!important;
+    white-space:nowrap!important;
+    overflow:visible!important;
+    font-size:12px!important;
+    width:auto!important;
+  }
+
+  .plantel-stats-table .mobile-stats span{
+    display:inline-flex!important;
+    margin:0!important;
+    white-space:nowrap!important;
+  }
+
+  .plantel-stats-table .skill-cell{
+    justify-content:flex-start!important;
+    white-space:nowrap!important;
+  }
+
+  .plantel-stats-table .skill-cell .stars{
+    font-size:18px!important;
+    letter-spacing:0!important;
+  }
+
+  .plantel-stats-table .specialty-icon-cell{
+    justify-content:center!important;
+    font-size:20px!important;
+  }
+
+  .plantel-stats-table .row-actions{
+    justify-content:flex-start!important;
+    gap:5px!important;
+    white-space:nowrap!important;
+  }
+
+  .plantel-stats-table .row-actions .btn-mini{
+    flex:0 0 auto!important;
+  }
+}
+
+/* Desktop/tablet: keep clean conventional table alignment. */
+@media (min-width:701px){
+  .plantel-stats-table{
+    width:100%!important;
+    table-layout:fixed!important;
+  }
+  .plantel-stats-table td,
+  .plantel-stats-table th{
+    vertical-align:middle!important;
+  }
+  .plantel-stats-table .mobile-stats{
+    display:table-cell!important;
+    vertical-align:middle!important;
+  }
+}
+</style>
 </head>
 <body>
 <div class="wrap">
