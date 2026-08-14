@@ -1,0 +1,2537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fútbol 5 — Armado de equipos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --verde-cancha:#1F6B3F;
+    --verde-oscuro:#123D26;
+    --verde-claro:#3FA65C;
+    --tiza:#F5F2E9;
+    --tiza-oscura:#E7E2D3;
+    --tinta:#14261B;
+    --tinta-suave:#4B5B50;
+    --peto-a:#C1272D;
+    --peto-a-texto:#FFFFFF;
+    --peto-b:#FFFFFF;
+    --peto-b-texto:#14261B;
+    --rojo:#C1440E;
+    --linea:rgba(255,255,255,0.18);
+    --radio:14px;
+    --sombra:0 6px 18px rgba(18,61,38,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Work Sans', sans-serif;
+    background:var(--verde-cancha);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 2px, transparent 2px, transparent 40px),
+      linear-gradient(180deg, var(--verde-cancha), var(--verde-oscuro) 700px);
+    color:var(--tinta);
+    min-height:100vh;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:20px 16px 80px;}
+  header.hero{color:var(--tiza);padding:18px 4px 26px;}
+  .eyebrow{
+    font-family:'Bebas Neue', sans-serif;
+    letter-spacing:0.14em;
+    color:var(--verde-claro);
+    font-size:14px;
+    text-transform:uppercase;
+  }
+  h1.title{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:clamp(38px,7vw,58px);
+    line-height:0.95;
+    margin:2px 0 6px;
+    letter-spacing:0.01em;
+  }
+  .subtitle{color:rgba(245,242,233,0.75);font-size:15px;max-width:520px;}
+
+  nav.tabs{
+    display:flex;gap:8px;margin:20px 0 18px;
+    overflow-x:auto;padding-bottom:2px;
+  }
+  nav.tabs button{
+    font-family:'Bebas Neue', sans-serif;
+    letter-spacing:0.05em;
+    font-size:16px;
+    background:rgba(245,242,233,0.1);
+    color:var(--tiza);
+    border:1px solid var(--linea);
+    padding:9px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background 0.15s, transform 0.1s;
+  }
+  nav.tabs button:hover{background:rgba(245,242,233,0.18);}
+  nav.tabs button.active{background:var(--tiza);color:var(--tinta);}
+
+   .data-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  .data-status{font-size:12px;color:rgba(245,242,233,0.72);}
+.card{
+    background:var(--tiza);
+    border-radius:var(--radio);
+    box-shadow:var(--sombra);
+    padding:22px;
+    margin-bottom:16px;
+  }
+  .card h2{
+    font-family:'Bebas Neue', sans-serif;
+    font-size:24px;
+    letter-spacing:0.02em;
+    margin:0 0 4px;
+  }
+  .card .desc{color:var(--tinta-suave);font-size:13.5px;margin:0 0 16px;}
+
+  .stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;}
+  .stat{
+    background:rgba(245,242,233,0.1);
+    border:1px solid var(--linea);
+    border-radius:10px;
+    padding:10px 16px;
+    color:var(--tiza);
+    min-width:110px;
+  }
+  .stat .n{font-family:'Bebas Neue', sans-serif;font-size:28px;line-height:1;}
+  .stat .l{font-size:11.5px;text-transform:uppercase;letter-spacing:0.06em;color:rgba(245,242,233,0.7);}
+  .pending-kpi{background:rgba(210,168,77,0.16);border-color:rgba(210,168,77,0.5);}
+  .pending-kpi .n{color:#E8C96A;}
+
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;
+    color:var(--tinta-suave);padding:6px 8px;border-bottom:2px solid var(--tiza-oscura);
+  }
+  td{padding:8px;border-bottom:1px solid var(--tiza-oscura);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  input[type=text], input[type=number], select, textarea{
+    font-family:inherit;font-size:14px;padding:8px 10px;border-radius:8px;
+    border:1px solid #CFC8B2;background:#fff;color:var(--tinta);width:100%;
+  }
+  textarea{resize:vertical;min-height:60px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end;}
+  .row > div{flex:1;min-width:120px;}
+  label{font-size:12px;color:var(--tinta-suave);display:block;margin-bottom:4px;font-weight:600;}
+  .btn{
+    font-family:'Bebas Neue', sans-serif;font-size:15px;letter-spacing:0.04em;
+    background:var(--verde-cancha);color:#fff;border:none;border-radius:9px;
+    padding:10px 18px;cursor:pointer;transition:background 0.15s;
+  }
+  .btn:hover{background:var(--verde-oscuro);}
+  .btn.secondary{background:transparent;color:var(--tinta);border:1.5px solid var(--tinta-suave);}
+  .btn.secondary:hover{background:var(--tiza-oscura);}
+  .btn.danger{background:transparent;color:var(--rojo);border:1.5px solid var(--rojo);padding:6px 10px;font-size:13px;}
+  .btn.small{padding:6px 12px;font-size:13px;}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--tiza-oscura);border-radius:999px;padding:4px 10px;font-size:12.5px;margin:3px 4px 3px 0;
+  }
+  .pill button{background:none;border:none;color:var(--rojo);cursor:pointer;font-weight:700;padding:0;}
+  .skill-badge{
+    display:inline-block;min-width:26px;text-align:center;font-weight:700;
+    background:var(--verde-cancha);color:#fff;border-radius:6px;padding:2px 6px;font-size:12.5px;
+  }
+  .gender-tag{font-size:11px;padding:1px 6px;border-radius:5px;font-weight:700;}
+  .gender-tag.F{background:#F3D9E4;color:#9C2B57;}
+  .gender-tag.M{background:#D7E6F0;color:#1E5A80;}
+  .del-icon{background:none;border:none;color:var(--rojo);font-size:17px;cursor:pointer;padding:2px 6px;}
+  .gk-badge-toggle{border:1px solid #CFC8B2;background:#fff;border-radius:999px;padding:1px 8px;font-size:12px;cursor:pointer;margin-left:6px;}
+  .gk-badge-toggle.on{background:#5B2E8C;color:#fff;border-color:#5B2E8C;}
+  .edit-link{background:none;border:none;color:var(--tinta-suave);text-decoration:underline;font-size:12.5px;cursor:pointer;padding:0;}
+  .select-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+
+  .check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px;}
+  .check-item{
+    display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:9px;
+    background:#111412;border:1px solid rgba(214,164,63,.20);border-radius:11px;padding:10px 12px;
+    color:#F0EEE8;font-size:14px;cursor:pointer;min-width:0;
+    transition:border-color .15s,box-shadow .15s,background .15s,transform .12s;
+  }
+  .check-item:hover{
+    border-color:rgba(214,164,63,.55);box-shadow:0 5px 16px rgba(0,0,0,.25);
+    background:#171A17;transform:translateY(-1px);
+  }
+  .check-item input{width:17px;height:17px;margin:0;accent-color:#D6A43F;}
+  .check-player-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;color:#F1EFE8;}
+  .check-item .club-avatar{width:32px;height:32px;min-width:32px;}
+  .check-item .stars{font-size:14px;white-space:nowrap;display:inline-flex;flex-shrink:0;letter-spacing:-1px;}
+  .check-item .rating-compact{justify-self:end;min-width:58px;justify-content:flex-end;}
+  .check-item .rating-compact .rating-star{font-size:16px;}
+  .check-item:has(input:checked){
+    border-color:#D6A43F;background:linear-gradient(145deg,#1B1A14,#11130F);
+    box-shadow:0 0 0 1px rgba(214,164,63,.22),0 6px 18px rgba(0,0,0,.20);
+  }
+  .selection-complete .check-item:not(:has(input:checked)){opacity:.38;}
+  .selection-complete .check-item:not(:has(input:checked)) input{cursor:not-allowed;}
+  .armar-result-screen{margin-top:0;}
+  .armar-result-screen .teams-wrap{margin-top:12px;}
+  .armar-result-screen .team-col{min-width:0;}
+  .armar-result-screen .team-col li{min-width:0;}
+  .armar-result-screen .team-col li > span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .armar-result-screen .rating-compact{flex-shrink:0;}
+  .check-item .gender-tag{flex-shrink:0;}
+
+  .teams-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;}
+  @media (max-width:560px){
+    .wrap{padding:12px 10px 70px;}
+    .card{padding:16px;border-radius:14px;}
+    .teams-wrap{grid-template-columns:1fr;gap:10px;}
+    .check-grid{grid-template-columns:1fr;gap:8px;}
+    .check-item{grid-template-columns:22px minmax(0,1fr) auto;padding:10px 9px;}
+    .check-item .stars{font-size:12px;}
+    .check-item .rating-compact{font-size:13px;gap:4px;}
+    .check-item .rating-compact .rating-star{font-size:14px;}
+    .row > div{min-width:100%;}
+    .row > div:has(button){min-width:100%;}
+    .edit-teams-box .row{gap:7px;}
+    .edit-teams-box .btn{width:100%;}
+    .global-balance{padding:10px 12px;}
+    .global-balance strong{font-size:14px;}
+    .global-balance span{font-size:12px;}
+  }
+  .team-col{border-radius:12px;padding:14px;color:#fff;}
+  .team-col.A{background:linear-gradient(160deg, var(--peto-a), #8C1A1F);color:var(--peto-a-texto);}
+  .team-col.B{background:linear-gradient(160deg, var(--peto-b), #E5E0D0);color:var(--peto-b-texto);border:1px solid #CFC8B2;}
+  .team-col h3{font-family:'Bebas Neue', sans-serif;font-size:20px;margin:0 0 8px;letter-spacing:0.03em;}
+  .team-col ul{list-style:none;padding:0;margin:0 0 10px;}
+  .team-col li{padding:6px 0;font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid rgba(0,0,0,0.08);min-width:0;}
+  .team-col li > span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .stars{display:inline-flex;align-items:center;white-space:nowrap;line-height:1;}
+  .stars .star{display:inline-block;font-size:15px;line-height:1;color:#F2B84B;text-shadow:0 0 0.5px rgba(80,50,0,.25);}
+  .stars .star.empty{color:#C9C5B9;text-shadow:none;}
+  .stars .star.half{background:linear-gradient(90deg,#F2B84B 50%,#C9C5B9 50%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;}
+  .rating-compact{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-weight:700;color:var(--tinta);}
+  .rating-compact .rating-star{color:#F2B84B;font-size:15px;line-height:1;}
+  .team-col .stars{white-space:nowrap;flex-shrink:0;font-size:14px;letter-spacing:-1px;}
+  .team-col .rating-compact{color:inherit;}
+  .team-col .rating-compact .rating-star{color:#F2B84B;}
+  .armar-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;}
+  .armar-selection-card{transition:opacity .15s;}
+  .armar-selection-card.selection-complete .check-item:not(:has(input:checked)){opacity:.45;}
+  .armar-result-screen{margin-top:0;}
+  .back-selection{margin-bottom:12px;}
+  .team-col .total{font-size:12.5px;font-weight:700;opacity:0.85;}
+
+  .field-svg{display:block;margin:14px auto 0;max-width:100%;}
+
+  .match-item{border:1px solid var(--tiza-oscura);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+  .match-item .top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;}
+  .match-item .date{font-family:'Bebas Neue', sans-serif;font-size:15px;}
+  .match-item .score{font-weight:700;}
+  .match-item .teams{font-size:13px;color:var(--tinta-suave);margin-top:4px;}
+  .empty{color:var(--tinta-suave);font-size:14px;padding:20px 0;text-align:center;}
+  .msg{font-size:13px;padding:8px 12px;border-radius:8px;margin-bottom:10px;}
+  .msg.ok{background:#DCF0E1;color:#1E6B3D;}
+  .save-toast{display:none;margin-top:10px;background:#DCF0E1;color:#176A3A;border:1px solid rgba(23,106,58,.25);border-radius:9px;padding:9px 13px;font-size:13px;font-weight:700;}
+  .save-toast.show{display:block;}
+  .msg.warn{background:#FCE9D6;color:#8A4B0C;}
+  footer.foot{text-align:center;color:rgba(245,242,233,0.55);font-size:12px;margin-top:24px;}
+
+  .global-balance{margin:12px 0;padding:12px 14px;border-radius:10px;background:#EEF7F0;border:1px solid #C9E4CF;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;}
+  .global-balance strong{font-size:16px;}
+  .global-balance span{font-size:13px;color:var(--tinta-suave);}
+  .warn-balance{background:#FFF4E5;border-color:#F0C98A;}
+  .edit-teams-box{margin-top:16px;padding:14px;border:1px dashed #A9B6AC;border-radius:10px;background:#FAF8F2;}
+  .team-player{cursor:grab;user-select:none;}
+  .team-player:active{cursor:grabbing;}
+  .team-player:hover{background:rgba(31,107,63,.08);}
+  .historial-formation{margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,.08);}
+  .historial-formation .teams-wrap{margin-top:0;}
+  .historial-arrow-up{color:#159447;font-weight:900;margin-left:6px;font-size:17px;}
+  .historial-arrow-down{color:#D12A32;font-weight:900;margin-left:6px;font-size:17px;}
+  .historial-result{display:flex;justify-content:center;align-items:center;gap:12px;margin:12px 0;font-weight:800;font-size:16px;}
+  .historial-result .red{background:#C1272D;color:#fff;border-radius:8px;padding:5px 12px;}
+  .historial-result .white{background:#fff;color:#173A2A;border:1px solid #CFC8B2;border-radius:8px;padding:5px 12px;}
+
+  .btn-mini{border:1px solid #c9c2ae;background:#fffdf6;border-radius:7px;padding:4px 7px;margin-right:4px;cursor:pointer;font-weight:700;}
+  .btn-mini:hover{background:#eee8d8;}
+</style>
+<style id="specialty-ui">
+.specialty-help{display:flex;gap:10px;align-items:flex-start;margin:10px 0 14px;padding:12px 14px;border-radius:12px;background:rgba(242,184,75,.10);border:1px solid rgba(242,184,75,.35)}
+.specialty-help span{color:#5f665f;font-size:.9rem;line-height:1.4}
+.specialty-example-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.specialty-example-grid>div{padding:12px;border:1px solid rgba(18,64,43,.12);border-radius:12px;background:#fff;line-height:1.35}
+.specialty-example-grid span{font-size:.84rem;color:#6b7280}
+@media(max-width:700px){.specialty-example-grid{grid-template-columns:1fr}}
+</style><style id="new-specialty-field">
+.new-specialty-field select{min-width:180px}
+@media(max-width:700px){.new-specialty-field{width:100%;max-width:none!important}.new-specialty-field select{width:100%}}
+</style>
+<style id="player-add-layout-fix">
+.player-add-row{
+  display:grid;
+  grid-template-columns:minmax(0,1.25fr) minmax(0,1.25fr) minmax(105px,.85fr) minmax(115px,.9fr) minmax(125px,.95fr) minmax(170px,1.35fr) auto;
+  gap:12px;
+  align-items:end;
+  width:100%;
+}
+.player-add-row > div{
+  min-width:0!important;
+  max-width:none!important;
+  width:auto!important;
+}
+.player-add-row input,
+.player-add-row select{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.player-add-row .btn{
+  white-space:nowrap;
+}
+@media(max-width:1050px){
+  .player-add-row{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .player-add-row > div:last-child{
+    grid-column:1 / -1;
+    justify-self:start;
+  }
+}
+@media(max-width:700px){
+  .player-add-row{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .player-add-row > div:last-child{
+    grid-column:auto;
+  }
+  .player-add-row .btn{
+    width:100%;
+  }
+}
+</style>
+
+<style id="player-statistics-v1">
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.plantel-stats-table{min-width:900px}
+.plantel-stats-table th,.plantel-stats-table td{vertical-align:middle}
+.num-stat{text-align:center;font-weight:700;min-width:34px}
+.stat-win{color:#277A49}.stat-draw{color:#9A7A18}.stat-loss{color:#B23A3A}.stat-best{color:#C68A16}.stat-worst{color:#B23A3A}
+.row-actions{white-space:nowrap;text-align:right}
+.stats-mini{margin-right:4px}
+.stats-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;font-size:12px;color:var(--tinta-suave)}
+.stats-legend span{white-space:nowrap}
+.player-stats-detail{margin-top:16px;padding:16px;border-radius:14px;background:#F7F4EA;border:1px solid var(--tiza-oscura)}
+.player-stats-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.player-stats-head h3{margin:0 0 5px}
+.player-stats-grid{display:grid;grid-template-columns:repeat(6,minmax(75px,1fr));gap:8px;margin-top:14px}
+.player-stats-grid>div{background:#fff;border:1px solid rgba(18,64,43,.10);border-radius:10px;padding:10px;text-align:center}
+.player-stats-grid b{display:block;font-size:22px;line-height:1.1}.player-stats-grid span{font-size:11px;color:var(--tinta-suave)}
+.player-winrate{margin-top:12px;padding:10px 12px;border-radius:10px;background:#EAF4ED;color:#28563A}
+@media(max-width:700px){.player-stats-grid{grid-template-columns:repeat(3,1fr)}.player-stats-detail{padding:12px}}
+</style>
+
+<style id="pending-kpi-button-fix">
+.pending-kpi-btn{
+  cursor:pointer;
+  font:inherit;
+  color:inherit;
+  text-align:left;
+  transition:transform .16s ease, filter .16s ease, box-shadow .16s ease;
+}
+.pending-kpi-btn:hover{
+  transform:translateY(-2px);
+  filter:brightness(1.06);
+  box-shadow:0 8px 18px rgba(0,0,0,.14);
+}
+.pending-kpi-btn:active{transform:translateY(0)}
+.pending-kpi-btn:focus-visible{
+  outline:3px solid #F2B84B;
+  outline-offset:2px;
+}
+</style>
+
+<style id="plantel-mobile-layout-v3">
+/* Plantel: compact, fixed column order, horizontal scroll on narrow screens */
+.table-scroll{
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  width:100%;
+}
+.plantel-stats-table{
+  min-width:720px;
+  width:100%;
+  border-collapse:collapse;
+}
+.plantel-stats-table th,
+.plantel-stats-table td{
+  vertical-align:middle;
+  padding:11px 10px;
+}
+.plantel-stats-table th:nth-child(1){min-width:150px}
+.plantel-stats-table th:nth-child(2){min-width:235px}
+.plantel-stats-table th:nth-child(3){min-width:105px}
+.plantel-stats-table th:nth-child(4){width:90px;text-align:center}
+.plantel-stats-table th:nth-child(5){width:110px}
+.player-cell{white-space:nowrap}
+.player-name-mobile{font-weight:700}
+.mobile-stats{
+  display:table-cell;
+  vertical-align:middle;
+  white-space:nowrap;
+  font-size:12px;
+  line-height:1.2;
+  min-width:0;
+}
+.mobile-stats span{
+  display:inline-block;
+  white-space:nowrap;
+  margin-right:9px;
+  vertical-align:middle;
+}
+.mobile-stats span:last-child{margin-right:0}
+.mobile-stats b{font-weight:800}
+.skill-cell{white-space:nowrap}
+.skill-cell .stars{font-size:18px}
+.specialty-icon-cell{
+  text-align:center;
+  font-size:20px;
+  white-space:nowrap;
+  cursor:help;
+}
+.row-actions{
+  white-space:nowrap;
+  text-align:left;
+}
+.row-actions .btn-mini{padding:6px 8px}
+.gender-tag{font-size:9px;margin-left:4px}
+@media(max-width:700px){
+  .plantel-stats-table{min-width:690px}
+  .plantel-stats-table th,
+  .plantel-stats-table td{padding:10px 8px}
+  .plantel-stats-table th:nth-child(1){min-width:125px}
+  .plantel-stats-table th:nth-child(2){min-width:245px}
+  .plantel-stats-table th:nth-child(3){min-width:105px}
+  .plantel-stats-table th:nth-child(4){min-width:72px;width:72px}
+  .plantel-stats-table th:nth-child(5){min-width:100px;width:100px}
+  .mobile-stats{gap:8px;font-size:11px}
+  .skill-cell .stars{font-size:17px}
+  .specialty-icon-cell{font-size:19px}
+}
+</style>
+
+<style id="plantel-row-alignment-fix">
+@media(max-width:700px){
+  /* Every column occupies the same row box; statistics are vertically centered in it. */
+  .plantel-stats-table tbody tr{
+    height:64px;
+  }
+  .plantel-stats-table tbody td{
+    height:64px;
+    box-sizing:border-box;
+    vertical-align:middle !important;
+  }
+  .plantel-stats-table .mobile-stats{
+    height:64px;
+    min-height:64px;
+    box-sizing:border-box;
+    display:flex;
+    align-items:center;
+    align-content:center;
+    justify-content:flex-start;
+    padding-top:0;
+    padding-bottom:0;
+  }
+  .plantel-stats-table .player-cell,
+  .plantel-stats-table .skill-cell,
+  .plantel-stats-table .specialty-icon-cell,
+  .plantel-stats-table .row-actions{
+    vertical-align:middle !important;
+  }
+}
+</style>
+
+<style id="plantel-row-grid-fix-v6">
+.plantel-stats-table{
+  width:100%;
+  min-width:720px;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+.plantel-stats-table thead tr,
+.plantel-stats-table tbody tr{
+  display:grid;
+  grid-template-columns: 24% 34% 19% 14% 9%;
+  align-items:center;
+  width:100%;
+  min-height:64px;
+}
+.plantel-stats-table thead th,
+.plantel-stats-table tbody td{
+  box-sizing:border-box;
+  width:auto!important;
+  min-width:0!important;
+  height:100%;
+  min-height:64px;
+  display:flex;
+  align-items:center;
+  padding:10px 10px;
+  vertical-align:middle!important;
+}
+.plantel-stats-table thead th{
+  min-height:42px;
+  height:42px;
+  padding-top:8px;
+  padding-bottom:8px;
+}
+.plantel-stats-table tbody tr{
+  border-top:1px solid rgba(18,64,43,.10);
+}
+.plantel-stats-table tbody .mobile-stats{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  flex-wrap:nowrap;
+  height:100%;
+  min-height:64px;
+  margin:0;
+  padding:10px;
+}
+.plantel-stats-table .player-cell,
+.plantel-stats-table .skill-cell,
+.plantel-stats-table .specialty-icon-cell,
+.plantel-stats-table .row-actions{
+  display:flex;
+  align-items:center;
+  height:100%;
+  min-height:64px;
+}
+.plantel-stats-table .specialty-icon-cell{
+  justify-content:center;
+}
+.plantel-stats-table .row-actions{
+  justify-content:flex-start;
+}
+@media(max-width:700px){
+  .plantel-stats-table{
+    min-width:690px;
+  }
+  .plantel-stats-table thead tr,
+  .plantel-stats-table tbody tr{
+    grid-template-columns: 125px 245px 105px 72px 100px;
+    min-width:690px;
+  }
+  .plantel-stats-table thead th,
+  .plantel-stats-table tbody td,
+  .plantel-stats-table tbody .mobile-stats{
+    padding-left:8px;
+    padding-right:8px;
+  }
+}
+</style>
+<style id="competitive-force-v8">
+.team-raw-skill{display:block;font-size:.82em;color:var(--tinta-suave);font-weight:400;margin-top:3px}
+</style>
+<style id="add-player-mobile-collapse">
+.add-player-title{margin:0!important}
+.add-player-toggle{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  width:100%;
+  border:0;
+  background:transparent;
+  padding:0;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.add-player-plus{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:38px;
+  height:38px;
+  border:1px solid rgba(18,64,43,.25);
+  border-radius:50%;
+  font-size:30px;
+  font-weight:500;
+  line-height:1;
+  transition:transform .18s ease, background .18s ease;
+}
+.add-player-card.is-open .add-player-plus{
+  transform:rotate(45deg);
+}
+@media(min-width:701px){
+  .add-player-toggle{cursor:default}
+  .add-player-plus{display:none}
+}
+@media(max-width:700px){
+  .add-player-body{
+    display:none;
+    margin-top:20px;
+  }
+  .add-player-card.is-open .add-player-body{
+    display:block;
+  }
+  .add-player-toggle{
+    min-height:42px;
+  }
+  .add-player-toggle span:first-child{
+    font-size:24px;
+  }
+}
+</style>
+
+<style id="avatar-system-v2">
+.avatar-add-box{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 14px;margin:4px 0 14px;
+  border:1px solid rgba(214,164,63,.28);
+  border-radius:12px;background:rgba(255,255,255,.03);
+}
+.avatar-preview-wrap{flex:0 0 auto}
+.avatar-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.avatar-controls label{font-weight:700}
+.avatar-controls select{min-width:300px}
+.avatar-controls small{color:var(--tinta-suave)}
+.player-avatar{
+  width:38px;height:38px;min-width:38px;
+  display:inline-block;
+  border-radius:50%;overflow:hidden;
+  background:linear-gradient(180deg,var(--avatar-c1) 0 33.333%,var(--avatar-c2) 33.333% 66.666%,var(--avatar-c3) 66.666% 100%);
+  border:2px solid rgba(255,255,255,.78);
+  box-shadow:0 0 0 1px rgba(0,0,0,.42),0 2px 8px rgba(0,0,0,.3);
+  vertical-align:middle;
+}
+.player-avatar.preview{width:54px;height:54px;min-width:54px}
+.player-cell{display:flex!important;align-items:center;gap:7px}
+.team-player .player-avatar{width:32px;height:32px;min-width:32px}
+.team-player{display:flex!important;align-items:center;gap:8px}
+.team-player-name{flex:1;min-width:0}
+@media(max-width:700px){
+  .avatar-add-box{align-items:flex-start}
+  .avatar-controls{display:grid;grid-template-columns:1fr;flex:1}
+  .avatar-controls select{width:100%;min-width:0}
+  .avatar-controls small{font-size:11px}
+  .player-avatar{width:34px;height:34px;min-width:34px}
+}
+</style>
+
+<style id="premium-dark-v1">
+:root{
+  --verde-cancha:#070908;
+  --verde-oscuro:#0D100E;
+  --verde-claro:#D6A43F;
+  --tiza:#F1EFE8;
+  --tiza-oscura:#171916;
+  --tinta:#F1EFE8;
+  --tinta-suave:#A9ACA4;
+  --linea:rgba(214,164,63,.22);
+  --radio:14px;
+  --sombra:0 12px 34px rgba(0,0,0,.42);
+}
+body{
+  background:
+    radial-gradient(circle at 50% -10%,rgba(214,164,63,.12),transparent 34%),
+    linear-gradient(180deg,#090B0A 0%,#050605 100%);
+  color:var(--tinta);
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;
+  background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px);
+  background-size:100% 44px;
+}
+.wrap{max-width:980px;padding:24px 18px 88px}
+header.hero{padding:18px 4px 28px}
+.eyebrow{color:#D6A43F}
+h1.title{color:#F3F0E8;text-shadow:0 2px 16px rgba(214,164,63,.10)}
+.subtitle{color:#92978F}
+.stats-row{gap:10px}
+.stat{
+  background:linear-gradient(145deg,#121512,#0B0D0C)!important;
+  border:1px solid rgba(214,164,63,.22)!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.22)!important;
+  color:#F2EFE7!important;
+}
+.stat .n{color:#F0C96A}
+.data-bar{border-top:1px solid rgba(214,164,63,.12);padding-top:12px}
+nav.tabs{
+  background:rgba(8,10,9,.82);
+  border:1px solid rgba(214,164,63,.14);
+  border-radius:14px;
+  padding:7px;
+  box-shadow:0 10px 25px rgba(0,0,0,.28);
+}
+nav.tabs button{
+  background:transparent!important;
+  color:#B9BCB5!important;
+  border:1px solid transparent!important;
+}
+nav.tabs button:hover{background:rgba(214,164,63,.08)!important;color:#F4E5BE!important}
+nav.tabs button.active{
+  background:#D6A43F!important;
+  color:#11130F!important;
+  border-color:#D6A43F!important;
+  box-shadow:0 5px 14px rgba(214,164,63,.18);
+}
+.card{
+  background:linear-gradient(145deg,#151815,#0E100F)!important;
+  color:#F1EFE8!important;
+  border:1px solid rgba(214,164,63,.16);
+  box-shadow:0 14px 36px rgba(0,0,0,.34);
+}
+.card .desc,.subtitle{color:#9EA29A!important}
+.card h2{color:#F3EFE5}
+input,select,textarea{
+  background:#0A0C0B!important;
+  color:#F0EEE8!important;
+  border:1px solid rgba(214,164,63,.28)!important;
+}
+input::placeholder,textarea::placeholder{color:#666C65}
+label{color:#D9D7D0}
+.btn{
+  background:#D6A43F!important;
+  color:#11130F!important;
+  border:1px solid #D6A43F!important;
+  box-shadow:0 6px 16px rgba(214,164,63,.12);
+}
+.btn.secondary{
+  background:#111412!important;
+  color:#E8E3D7!important;
+  border:1px solid rgba(214,164,63,.35)!important;
+}
+.btn:hover{filter:brightness(1.08)}
+.add-player-card,.edit-teams-box,.global-balance,.specialty-help,.msg{
+  background:rgba(255,255,255,.025)!important;
+  border-color:rgba(214,164,63,.18)!important;
+}
+.specialty-help strong{color:#E8C46C}
+.player-stats-table{
+  color:#EDEAE2;
+}
+.plantel-stats-table thead th{color:#B9A36D!important}
+.plantel-stats-table tbody tr{border-color:rgba(255,255,255,.08)!important}
+.mobile-stats{color:#BFC1BA}
+.team-col{
+  background:#101310!important;
+  border:1px solid rgba(214,164,63,.22)!important;
+  color:#F2EFE7!important;
+}
+.team-col.A{
+  background:linear-gradient(145deg,#241214,#11100F)!important;
+  border-color:rgba(176,49,57,.55)!important;
+}
+.team-col.B{
+  background:linear-gradient(145deg,#151715,#0F110F)!important;
+}
+.team-col h3{color:#E6C76F!important}
+.team-player{border-color:rgba(255,255,255,.08)!important}
+.global-balance{
+  border:1px solid rgba(214,164,63,.28)!important;
+  color:#E9E4D7!important;
+}
+.global-balance strong{color:#EBC76B}
+.foot{color:#777C75}
+.save-toast{background:#D6A43F!important;color:#11130F!important}
+.avatar-add-box{background:rgba(214,164,63,.035)!important}
+.avatar-controls small{color:#888E86!important}
+.btn-mini{
+  background:#121513!important;color:#E9E5DA!important;
+  border-color:rgba(214,164,63,.28)!important;
+}
+.btn-mini:hover{background:#1B1F1B!important}
+.del-icon{color:#E06B6B!important}
+.historial-result .red{background:#7D2027!important}
+.historial-result .white{background:#181A18!important;color:#EDEAE2!important;border-color:rgba(214,164,63,.22)!important}
+.pending-kpi{border-color:#D6A43F!important}
+@media(max-width:700px){
+  .wrap{padding:14px 12px 78px}
+  header.hero{padding-top:10px}
+  nav.tabs{margin-left:-2px;margin-right:-2px}
+  .card{padding:18px}
+}
+</style>
+
+<style id="avatar-club-v3">
+.avatar-controls select{
+  font-weight:700;
+  letter-spacing:.01em;
+}
+.avatar-controls select option{
+  background:#0A0C0B;
+  color:#F0EEE8;
+  padding:8px;
+}
+.avatar-preview-wrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+}
+.avatar-preview-wrap:after{
+  content:'AVATAR';
+  font-size:9px;
+  letter-spacing:.12em;
+  color:#8C918A;
+}
+</style>
+
+<style id="armar-premium-fix-v14">
+.armar-selection-card .check-item .rating-compact{
+  color:#E8C76A!important;
+}
+.armar-selection-card .check-item .rating-star{
+  color:#D6A43F!important;
+}
+.armar-selection-card .check-item .rating-star.empty{
+  color:#4A4D47!important;
+}
+.armar-selection-card .check-item .gender-tag{
+  color:#111!important;
+}
+@media(max-width:700px){
+  .armar-selection-card .check-grid{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  .armar-selection-card .check-item{
+    min-height:52px;
+    padding:9px 10px;
+  }
+}
+</style>
+
+<style id="armar-header-polish-v14">
+.armar-selection-card h2{color:#F3EFE5;font-size:28px;}
+.armar-selection-card>.desc{color:#9FA49C!important;}
+.armar-selection-card .select-tools .btn.secondary{
+  background:#101310!important;
+  border-color:rgba(214,164,63,.30)!important;
+  color:#E9E5DB!important;
+}
+.armar-selection-card .select-tools .btn.secondary:hover{
+  background:#1A1D19!important;border-color:#D6A43F!important;
+}
+.armar-actions #seleccionCount{color:#B9BDB5!important;}
+</style>
+
+<style id="premium-header-v15">
+.hero .eyebrow{
+  color:#D6A43F;
+  font-size:13px;
+  letter-spacing:.16em;
+  margin-bottom:3px;
+}
+.hero .title{
+  font-size:clamp(44px,8vw,64px);
+  letter-spacing:.025em;
+  margin-bottom:5px;
+  color:#F3EFE5;
+}
+.hero .subtitle{
+  max-width:620px;
+  color:rgba(245,242,233,.70);
+}
+.hero .stats-row{
+  gap:9px;
+  align-items:stretch;
+}
+.hero .stat{
+  min-width:108px;
+  padding:10px 13px;
+  background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.025));
+  border-color:rgba(214,164,63,.20);
+}
+.hero .stat .n{
+  color:#F3EFE5;
+}
+.hero .stat .l{
+  color:rgba(245,242,233,.58);
+  font-size:10.5px;
+}
+.hero .pending-kpi{
+  border-color:rgba(214,164,63,.65);
+  background:linear-gradient(145deg,rgba(214,164,63,.19),rgba(214,164,63,.07));
+  cursor:pointer;
+  transition:transform .15s,box-shadow .15s,border-color .15s;
+}
+.hero .pending-kpi:hover{
+  transform:translateY(-1px);
+  border-color:#D6A43F;
+  box-shadow:0 5px 18px rgba(214,164,63,.14);
+}
+.hero .pending-kpi .n{
+  color:#E8C96A;
+}
+.hero .data-bar{
+  margin-top:13px;
+}
+.hero .data-bar .btn{
+  border-radius:10px;
+}
+.hero .data-bar .btn.secondary{
+  color:#E9E5DB;
+  border-color:rgba(214,164,63,.35);
+}
+.hero .data-bar .btn.secondary:hover{
+  background:rgba(214,164,63,.10);
+  border-color:#D6A43F;
+}
+@media(max-width:650px){
+  .hero .stats-row{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .hero .stat{
+    min-width:0;
+  }
+  .hero .pending-kpi{
+    grid-column:1/-1;
+  }
+}
+</style>
+
+<style id="evo-premium-v16">
+.evo-chart-shell{
+  position:relative;
+  margin-top:4px;
+  padding:6px 8px 0;
+  border:1px solid rgba(214,164,63,.10);
+  border-radius:14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.005));
+}
+.evo-chart-shell svg{display:block}
+.evo-current{
+  position:absolute;
+  right:16px;
+  top:14px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:1px;
+  color:#858B84;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.evo-current strong{
+  color:#E6C36B;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:19px;
+  letter-spacing:.03em;
+}
+@media(max-width:700px){
+  .evo-chart-shell{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .evo-chart-shell svg{
+    min-width:620px;
+  }
+}
+</style>
+
+<style id="plantel-row-alignment-v17">
+/* Corrección: las estadísticas están dentro del <td>. No deben ser flex,
+   porque eso desengancha visualmente la celda del resto de la fila. */
+.plantel-stats-table{
+  table-layout:fixed;
+}
+.plantel-stats-table th:nth-child(1),.plantel-stats-table td:nth-child(1){width:27%}
+.plantel-stats-table th:nth-child(2),.plantel-stats-table td:nth-child(2){width:36%}
+.plantel-stats-table th:nth-child(3),.plantel-stats-table td:nth-child(3){width:16%}
+.plantel-stats-table th:nth-child(4),.plantel-stats-table td:nth-child(4){width:10%}
+.plantel-stats-table th:nth-child(5),.plantel-stats-table td:nth-child(5){width:11%}
+.plantel-stats-table tbody tr{height:76px}
+.plantel-stats-table td{height:76px;box-sizing:border-box}
+.player-cell,.mobile-stats{vertical-align:middle!important}
+
+@media(max-width:700px){
+  .plantel-stats-table{table-layout:fixed;min-width:690px}
+  .plantel-stats-table th:nth-child(1),.plantel-stats-table td:nth-child(1){width:27%;min-width:185px}
+  .plantel-stats-table th:nth-child(2),.plantel-stats-table td:nth-child(2){width:36%;min-width:245px}
+  .plantel-stats-table th:nth-child(3),.plantel-stats-table td:nth-child(3){width:16%;min-width:105px}
+  .plantel-stats-table th:nth-child(4),.plantel-stats-table td:nth-child(4){width:10%;min-width:72px}
+  .plantel-stats-table th:nth-child(5),.plantel-stats-table td:nth-child(5){width:11%;min-width:80px}
+  .plantel-stats-table tbody tr,.plantel-stats-table td{height:76px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Liga interna · Fútbol 5 mixto</div>
+    <h1 class="title">F5 MANAGER</h1>
+    <p class="subtitle">Armá equipos equilibrados. Jugá. Registrá el resultado y hacé evolucionar el plantel.</p>
+    <div class="stats-row" id="statsRow"></div>
+    <div class="data-bar">
+      <button class="btn secondary small" onclick="document.getElementById('excelInput').click()">📥 Importar Excel</button>
+      <button class="btn secondary small" onclick="crearBaseDesdeCero()">➕ Nueva base desde 0</button>
+      <button class="btn small" onclick="exportarExcel()">📤 Descargar Excel</button>
+      <input id="excelInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
+      <span id="dataStatus" class="data-status">Elegí importar un Excel o crear una base desde 0</span>
+    </div>
+    <div id="saveToast" class="save-toast" role="status"></div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="plantel" class="active">🏠 Inicio</button>
+    <button data-tab="armar">⚽ Armar partido</button>
+    <button data-tab="resultado">✓ Cargar resultado</button>
+    <button data-tab="historial">Historial</button>
+    <button data-tab="reglas">Reglas</button>
+  </nav>
+
+  <div id="content"></div>
+  <footer class="foot">Datos compartidos: cualquiera que abra este link puede verlos y cargarlos.</footer>
+</div>
+
+<script>
+const STORAGE_KEY = 'futbol5-liga-data';
+let state = { players: [], forbiddenPairs: [], matches: [], lastTeams: null };
+let loaded = false;
+
+const genderLabel = g => g === 'F' ? 'F' : 'M';
+function nombreVisible(p){
+  if(!p) return '';
+  return `${p.name}${p.apodo ? ` (${p.apodo})` : ''}`;
+}
+function nombreCorto(p){ return p ? nombreVisible(p) : ''; }
+
+const AVATARES_PREDEFINIDOS = [
+  {value:'sinclub', label:'Sin club', emoji:'⚪ ⚪ ⚪', desc:'sin colores de club', c1:'#A7AAA5', c2:'#E8E7E0', c3:'#A7AAA5'},
+  {value:'river', label:'River Plate', emoji:'⚪ 🔴 ⚪', desc:'blanco · rojo · blanco', c1:'#F7F7F4', c2:'#D71920', c3:'#F7F7F4'},
+  {value:'boca', label:'Boca Juniors', emoji:'🟡 🔵 🟡', desc:'amarillo · azul · amarillo', c1:'#F4C400', c2:'#123C78', c3:'#F4C400'},
+  {value:'independiente', label:'Independiente', emoji:'🔴 🔴 🔴', desc:'rojo · rojo · rojo', c1:'#D71920', c2:'#B90F19', c3:'#D71920'},
+  {value:'racing', label:'Racing Club', emoji:'🔵 ⚪ 🔵', desc:'celeste · blanco · celeste', c1:'#72B8E8', c2:'#F7F7F4', c3:'#72B8E8'},
+  {value:'sanlorenzo', label:'San Lorenzo', emoji:'🔵 🔴 🔵', desc:'azul · rojo · azul', c1:'#173F8A', c2:'#D71920', c3:'#173F8A'},
+  {value:'huracan', label:'Huracán', emoji:'⚪ 🔴 ⚪', desc:'blanco · rojo · blanco', c1:'#F7F7F4', c2:'#D71920', c3:'#F7F7F4'},
+  {value:'velez', label:'Vélez', emoji:'⚪ 🔵 ⚪', desc:'blanco · azul · blanco', c1:'#F7F7F4', c2:'#21468B', c3:'#F7F7F4'},
+  {value:'estudiantes', label:'Estudiantes', emoji:'🔴 ⚪ 🔴', desc:'rojo · blanco · rojo', c1:'#D71920', c2:'#F7F7F4', c3:'#D71920'},
+  {value:'gimnasia', label:'Gimnasia', emoji:'🔵 ⚪ 🔵', desc:'azul · blanco · azul', c1:'#2E5B9A', c2:'#F7F7F4', c3:'#2E5B9A'},
+  {value:'rosariocentral', label:'Rosario Central', emoji:'🟡 🔵 🟡', desc:'amarillo · azul · amarillo', c1:'#F4C400', c2:'#1682B7', c3:'#F4C400'},
+  {value:'newells', label:"Newell's", emoji:'🔴 ⚫ 🔴', desc:'rojo · negro · rojo', c1:'#D71920', c2:'#171717', c3:'#D71920'},
+  {value:'talleres', label:'Talleres', emoji:'🔵 ⚪ 🔵', desc:'azul · blanco · azul', c1:'#1E5AA8', c2:'#F7F7F4', c3:'#1E5AA8'},
+  {value:'lanus', label:'Lanús', emoji:'🔴 ⚪ 🔴', desc:'granate · blanco · granate', c1:'#7B1E2B', c2:'#F7F7F4', c3:'#7B1E2B'},
+  {value:'banfield', label:'Banfield', emoji:'🟢 ⚪ 🟢', desc:'verde · blanco · verde', c1:'#087443', c2:'#F7F7F4', c3:'#087443'},
+  {value:'argentinos', label:'Argentinos Juniors', emoji:'🔴 ⚪ 🔴', desc:'rojo · blanco · rojo', c1:'#D71920', c2:'#F7F7F4', c3:'#D71920'},
+  {value:'belgrano', label:'Belgrano', emoji:'🔵 ⚪ 🔵', desc:'celeste · blanco · celeste', c1:'#65B5E5', c2:'#F7F7F4', c3:'#65B5E5'},
+  {value:'union', label:'Unión', emoji:'🔴 ⚪ 🔴', desc:'rojo · blanco · rojo', c1:'#D71920', c2:'#F7F7F4', c3:'#D71920'},
+  {value:'colon', label:'Colón', emoji:'🔴 ⚫ 🔴', desc:'rojo · negro · rojo', c1:'#D71920', c2:'#171717', c3:'#D71920'}
+];
+function avatarInfo(p){
+  let tipo=p?.avatarTipo || 'sinclub';
+  let preset=AVATARES_PREDEFINIDOS.find(a=>a.value===tipo);
+  // Compatibilidad: jugadores de versiones anteriores sin avatar reciben el avatar neutral.
+  if(!preset) preset=AVATARES_PREDEFINIDOS[0];
+  return {tipo:'club', value:preset.value, c1:preset.c1, c2:preset.c2, c3:preset.c3, label:preset.label, emoji:preset.emoji};
+}
+function avatarHTML(p, cls='player-avatar'){
+  const a=avatarInfo(p);
+  return `<span class="${cls} club-avatar" title="${a.label}" style="--avatar-c1:${a.c1};--avatar-c2:${a.c2};--avatar-c3:${a.c3};"></span>`;
+}
+function actualizarAvatarPreview(){
+  const sel=document.getElementById('newAvatarTipo');
+  const preview=document.getElementById('newAvatarPreview');
+  if(!sel || !preview) return;
+  preview.outerHTML=avatarHTML({avatarTipo:sel.value, avatarValor:''},'player-avatar preview');
+}
+
+function fuerzaGlobal(teamA, teamB){
+  const todos=[...(teamA||[]),...(teamB||[])];
+  if(!todos.length) return 0;
+  return todos.reduce((s,p)=>s+habilidadCompetitiva(p),0)/todos.length;
+}
+function numeroARating(v){ return Number(v||0).toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1}); }
+function numeroARatingPreciso(v){
+  return Number(v||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+// El puntaje interno es de 1 a 10. Las estrellas son solo la representación visual.
+// Para el armado de equipos, las estrellas no se comparan 1 a 1 entre géneros:
+// una misma puntuación de una mujer tiene una equivalencia competitiva menor.
+// Este factor queda centralizado para poder calibrarlo con el historial real.
+const FACTOR_COMPETITIVO_MUJER = 0.80;
+const HABILIDADES_ESPECIALES = [
+  {value:'', label:'Sin especialidad', ataque:0, defensa:0, movimiento:0, creacion:0},
+  {value:'goleador', label:'⚽ Goleador/a', ataque:0.30, defensa:0, movimiento:0.05, creacion:0.05},
+  {value:'defensor', label:'🛡️ Defensor/a', ataque:0, defensa:0.30, movimiento:0.05, creacion:0},
+  {value:'corredor', label:'🏃 Corredor/a', ataque:0.05, defensa:0.05, movimiento:0.30, creacion:0},
+  {value:'todoterreno', label:'🔄 Todo terreno', ataque:0.15, defensa:0.15, movimiento:0.15, creacion:0.15},
+  {value:'pase', label:'👟 Pase de primera', ataque:0.05, defensa:0, movimiento:0.05, creacion:0.30}
+];
+function especialData(p){
+  return HABILIDADES_ESPECIALES.find(e=>e.value===(p.habilidadEspecial||'')) || HABILIDADES_ESPECIALES[0];
+}
+function especialIcon(v){
+  const icons={goleador:'⚽',defensor:'🛡️',corredor:'🏃',todoterreno:'🔄',pase:'👟'};
+  return icons[v] || '—';
+}
+function especialLabel(v){
+  const x=HABILIDADES_ESPECIALES.find(e=>e.value===v);
+  return x ? x.label : 'Sin especialidad';
+}
+function habilidadCompetitiva(p){
+  // Fuerza competitiva = habilidad general ajustada por género.
+  // La especialidad NO suma puntos al nivel: se usa aparte para equilibrar perfiles.
+  const raw = Number(p.skill) || 0;
+  return p.gender === 'F' ? raw * FACTOR_COMPETITIVO_MUJER : raw;
+}
+
+function perfilCompetitivo(p){
+  const e = especialData(p);
+  return {
+    ataque:e.ataque || 0,
+    defensa:e.defensa || 0,
+    movimiento:e.movimiento || 0,
+    creacion:e.creacion || 0
+  };
+}
+
+function promedioHabilidad(team){
+  if(!team || !team.length) return 0;
+  return team.reduce((s,p)=>s+(Number(p.skill)||0),0)/team.length;
+}
+
+function ratingCompact(skill){
+  const value=Math.max(0,Math.min(10,Number(skill)||0));
+  return `<span class="rating-compact" aria-label="Puntaje ${value.toFixed(1)} de 10"><span class="rating-star">★</span><span>${numeroARating(value)}</span></span>`;
+}
+
+function estrellas(skill){
+  const value = Math.max(0, Math.min(10, Number(skill) || 0)) / 2;
+  const full = Math.floor(value);
+  const half = (value - full) >= 0.5;
+  let html = '';
+  for(let i=1;i<=5;i++){
+    if(i<=full) html += '<span class="star">★</span>';
+    else if(i===full+1 && half) html += '<span class="star half">★</span>';
+    else html += '<span class="star empty">★</span>';
+  }
+  return `<span class="stars" aria-label="${value.toFixed(1)} de 5 estrellas">${html}</span>`;
+}
+
+async function loadState(){
+  loaded = false;
+  state = { players: [], forbiddenPairs: [], matches: [], lastTeams: null };
+  let recuperada=false;
+  try{
+    const raw=localStorage.getItem('futbol5-session');
+    if(raw){
+      const parsed=JSON.parse(raw);
+      if(parsed && Array.isArray(parsed.players) && Array.isArray(parsed.matches)){
+        state=parsed;
+        loaded=true;
+        recuperada=true;
+      }
+    }
+  }catch(e){}
+  actualizarEstadoExcel(recuperada ? 'Base recuperada de este dispositivo · guardado automático activo' : 'Elegí importar un Excel o crear una base desde 0');
+  if(recuperada){
+    renderStats();
+    switchTab('plantel');
+  }else{
+    mostrarInicioBase();
+  }
+}
+
+function crearBaseDesdeCero(){
+  if(loaded && (state.players.length || state.matches.length) && !confirm('Esto va a reemplazar la base actual por una nueva base vacía. ¿Continuar?')) return;
+  state = { players: [], forbiddenPairs: [], matches: [], lastTeams: null };
+  loaded = true;
+  plantelEditMode = false;
+  guardarEstadoLocal();
+  actualizarEstadoExcel('Base nueva desde 0 · lista para cargar jugadores');
+  renderStats();
+  switchTab('plantel');
+}
+
+function actualizarEstadoExcel(texto){
+  const el=document.getElementById('dataStatus');
+  if(el) el.textContent=texto;
+}
+
+function mostrarConfirmacionGuardado(partidoNumero){
+  const el=document.getElementById('saveToast');
+  if(!el) return;
+  el.textContent=`✓ Cargado — Partido ${partidoNumero} guardado en el historial`;
+  el.classList.add('show');
+  clearTimeout(window._saveToastTimer);
+  window._saveToastTimer=setTimeout(()=>el.classList.remove('show'),5000);
+}
+
+function mostrarInicioBase(){
+  document.getElementById('content').innerHTML = `
+    <div class="card" style="text-align:center;padding:34px 20px;">
+      <h2>⚽ Empezá tu base de Fútbol 5</h2>
+      <p class="desc">Podés continuar desde un Excel existente o arrancar una base completamente nueva desde cero.</p>
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px;">
+        <button class="btn" onclick="document.getElementById('excelInput').click()">📥 Cargar Excel existente</button>
+        <button class="btn secondary" onclick="crearBaseDesdeCero()">➕ Armar base desde 0</button>
+      </div>
+      <p class="desc" style="margin-top:18px;">El Excel contiene la historia completa. Cuando cargues el primer partido, vas a poder descargar la base como <b>Partido 1</b> y compartirla con otro administrador.</p>
+      <div class="msg ok" style="margin-top:12px;">💾 Mientras trabajás, la web guarda automáticamente una copia local en este dispositivo. El Excel sigue siendo el archivo para compartir o respaldar.</div>
+    </div>`;
+}
+
+function guardarEstadoLocal(){
+  // Copia automática local. Permite cerrar y volver a abrir la web en el mismo dispositivo/navegador.
+  // El Excel sigue siendo la copia que se comparte y la que sirve como respaldo.
+  try{ localStorage.setItem('futbol5-session', JSON.stringify(state)); }catch(e){}
+}
+
+function saveState(){ guardarEstadoLocal(); }
+
+function partidosJugados(){
+  return state.matches.filter(m => m.estado !== 'armado').length;
+}
+function partidosPendientes(){
+  return state.matches.filter(m => m.estado === 'armado');
+}
+function obtenerPartidoPendiente(id){
+  return state.matches.find(m => m.id === id && m.estado === 'armado');
+}
+function sincronizarLastTeamsConPartido(m){
+  if(!m) return;
+  state.lastTeams = {
+    matchId:m.id,
+    teamA:[...(m.teamAIds||[])],
+    teamB:[...(m.teamBIds||[])],
+    date:m.fechaArmado || m.date || new Date().toISOString(),
+    arqueroA:m.arqueroAId || null,
+    arqueroB:m.arqueroBId || null
+  };
+}
+function actualizarPartidoArmadoDesdeLastTeams(){
+  if(!state.lastTeams?.matchId) return;
+  const m=obtenerPartidoPendiente(state.lastTeams.matchId);
+  if(!m) return;
+  m.teamAIds=[...(state.lastTeams.teamA||[])];
+  m.teamBIds=[...(state.lastTeams.teamB||[])];
+  m.teamA=m.teamAIds.map(id=>{const p=state.players.find(x=>x.id===id); return p?nombreVisible(p):'?';});
+  m.teamB=m.teamBIds.map(id=>{const p=state.players.find(x=>x.id===id); return p?nombreVisible(p):'?';});
+  if(!m.skillSnapshotA) m.skillSnapshotA={};
+  if(!m.skillSnapshotB) m.skillSnapshotB={};
+  m.teamAIds.forEach(id=>{ if(m.skillSnapshotA[id]===undefined){ const p=state.players.find(x=>x.id===id); if(p) m.skillSnapshotA[id]=p.skill; }});
+  m.teamBIds.forEach(id=>{ if(m.skillSnapshotB[id]===undefined){ const p=state.players.find(x=>x.id===id); if(p) m.skillSnapshotB[id]=p.skill; }});
+  m.arqueroAId=state.lastTeams.arqueroA||null;
+  m.arqueroBId=state.lastTeams.arqueroB||null;
+  m.arqueroANombre=m.arqueroAId ? (state.players.find(p=>p.id===m.arqueroAId)?.name || null) : null;
+  m.arqueroBNombre=m.arqueroBId ? (state.players.find(p=>p.id===m.arqueroBId)?.name || null) : null;
+}
+
+function rowsToObjects(ws){
+  return XLSX.utils.sheet_to_json(ws, {defval:''});
+}
+
+function parseSnapshot(value){
+  if(!value) return {};
+  try{return JSON.parse(String(value));}catch(e){return {};}
+}
+
+// Normaliza fechas provenientes de Excel. Los números son seriales de fecha Excel.
+// No usar new Date(numero), porque eso interpreta el valor como milisegundos desde 1970.
+function parseExcelDate(value){
+  if(value === null || value === undefined || value === '') return null;
+  if(value instanceof Date) return isNaN(value.getTime()) ? null : value;
+  if(typeof value === 'number'){
+    const d = new Date(Date.UTC(1899,11,30) + value * 86400000);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const text=String(value).trim();
+  if(!text) return null;
+  const iso=new Date(text);
+  if(!isNaN(iso.getTime())) return iso;
+  const m=text.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m){
+    const d=new Date(Number(m[3]),Number(m[2])-1,Number(m[1]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+function fechaISOExcel(value, fallback){
+  const d=parseExcelDate(value);
+  return d ? d.toISOString() : (fallback || new Date().toISOString());
+}
+
+function importarExcel(event){
+  const file=event.target.files && event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      const getRows=(name)=>wb.Sheets[name] ? rowsToObjects(wb.Sheets[name]) : [];
+      const jugadores=getRows('Jugadores');
+      if(!jugadores.length) throw new Error('No encontré la hoja Jugadores.');
+
+      const jugadoresMap={};
+      state.players=jugadores.map((r,i)=>{
+        const id=String(r.ID || ('p_'+(i+1)));
+        const skill=Number(r.Habilidad || 6);
+        const p={
+          id, name:String(r.Nombre||'Jugador '+(i+1)), apodo:String(r.Apodo||''),
+          gender:String(r.Genero||'M').toUpperCase()==='F'?'F':'M',
+          skill:Math.max(1,Math.min(10,skill)), matchesPlayed:Number(r.PartidosJugados||0), avatarTipo:AVATARES_PREDEFINIDOS.some(a=>a.value===String(r.AvatarTipo||'sinclub')) ? String(r.AvatarTipo||'sinclub') : 'sinclub', avatarValor:'', active:String(r.Activo||'Si').toLowerCase()!=='no',
+          esArquero:String(r.Arquero||'No').toLowerCase()==='si', skillHistory:[]
+        };
+        jugadoresMap[id]=p; return p;
+      });
+
+      state.forbiddenPairs=[];
+      getRows('Reglas').forEach(r=>{
+        const a=String(r.JugadorA_ID||''); const b=String(r.JugadorB_ID||'');
+        if(a && b && jugadoresMap[a] && jugadoresMap[b]) state.forbiddenPairs.push([a,b]);
+      });
+
+      state.matches=getRows('Partidos').map(r=>({
+        id:String(r.ID||uid()),
+        numero:Number(r.Numero||0),
+        estado:String(r.Estado||'jugado').toLowerCase()==='armado' ? 'armado' : 'jugado',
+        fechaArmado:fechaISOExcel(r.FechaArmado, fechaISOExcel(r.Fecha)),
+        date:fechaISOExcel(r.Fecha, fechaISOExcel(r.FechaArmado)),
+        teamA:String(r.EquipoA||'').split(',').map(x=>x.trim()).filter(Boolean),
+        teamAIds:String(r.EquipoA_IDs||'').split(',').map(x=>x.trim()).filter(Boolean),
+        teamB:String(r.EquipoB||'').split(',').map(x=>x.trim()).filter(Boolean),
+        teamBIds:String(r.EquipoB_IDs||'').split(',').map(x=>x.trim()).filter(Boolean),
+        skillSnapshotA:parseSnapshot(r.HabilidadA_Snapshot), skillSnapshotB:parseSnapshot(r.HabilidadB_Snapshot),
+        arqueroAId:String(r.ArqueroA_ID||'')||null, arqueroBId:String(r.ArqueroB_ID||'')||null,
+        arqueroANombre:String(r.ArqueroA||'')||null, arqueroBNombre:String(r.ArqueroB||'')||null,
+        resultadoTipo:String(r.ResultadoTipo||'empate'), diferencia:Number(r.Diferencia||0),
+        nivelPartido:String(r.NivelPartido||'parejo'),
+        best:String(r.Mejores||'').split(',').map(x=>x.trim()).filter(Boolean),
+        worst:String(r.MasCostaron||'').split(',').map(x=>x.trim()).filter(Boolean),
+        notas:String(r.Notas||'')
+      }));
+      // Compatibilidad con Excels anteriores que no tenían número de partido.
+      let maxNumero=0;
+      state.matches.forEach(m=>{ if(m.numero>maxNumero) maxNumero=m.numero; });
+      state.matches.forEach((m,i)=>{ if(!m.numero) m.numero=maxNumero ? maxNumero+i+1 : i+1; });
+
+      const historial=getRows('HistorialRating');
+      state.players.forEach(p=>{
+        p.skillHistory=historial.filter(r=>String(r.JugadorID||'')===p.id).map(r=>({
+          date:fechaISOExcel(r.Fecha) || new Date().toISOString(),
+          skill:Number(r.Habilidad||p.skill), label:String(r.Referencia||'')
+        }));
+        if(!p.skillHistory.length) p.skillHistory=[{date:new Date().toISOString(),skill:p.skill,label:'Inicial'}];
+      });
+
+      state.lastTeams=null;
+      const pendienteImportado=partidosPendientes()[0];
+      if(pendienteImportado) sincronizarLastTeamsConPartido(pendienteImportado);
+      loaded=true;
+      guardarEstadoLocal();
+      actualizarEstadoExcel(file.name+' · cargado');
+      renderStats();
+      switchTab('plantel');
+    }catch(err){
+      alert('No pude importar el Excel. Revisá que sea el archivo de base de Fútbol 5.\n\nDetalle: '+err.message);
+    }finally{ event.target.value=''; }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function exportarExcel(){
+  if(!loaded){ alert('Primero cargá un Excel o armá una base desde 0.'); return; }
+  const wb=XLSX.utils.book_new();
+  const jugadores=state.players.map(p=>({ID:p.id,Nombre:p.name,Apodo:p.apodo||'',Genero:p.gender,Habilidad:Number(p.skill.toFixed(2)),Arquero:p.esArquero?'Si':'No',AvatarTipo:p.avatarTipo||'inicial',AvatarValor:p.avatarValor||'',PartidosJugados:p.matchesPlayed||0,Activo:p.active===false?'No':'Si'}));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(jugadores),'Jugadores');
+  const reglas=state.forbiddenPairs.map(([a,b])=>{const pa=state.players.find(p=>p.id===a),pb=state.players.find(p=>p.id===b);return {JugadorA_ID:a,JugadorA:pa?.name||'',JugadorB_ID:b,JugadorB:pb?.name||'',Regla:'Nunca juntos'};});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(reglas),'Reglas');
+  const partidos=state.matches.map((m,i)=>({
+    ID:m.id,
+    Numero:m.numero || (i+1),
+    Estado:m.estado==='armado'?'Armado':'Jugado',
+    FechaArmado:m.fechaArmado?new Date(m.fechaArmado):null,
+    Fecha:m.estado==='armado'?null:new Date(m.date),
+    EquipoA:(m.teamA||[]).join(', '),
+    EquipoA_IDs:(m.teamAIds||[]).join(', '),
+    EquipoB:(m.teamB||[]).join(', '),
+    EquipoB_IDs:(m.teamBIds||[]).join(', '),
+    HabilidadA_Snapshot:JSON.stringify(m.skillSnapshotA||{}),
+    HabilidadB_Snapshot:JSON.stringify(m.skillSnapshotB||{}),
+    ArqueroA_ID:m.arqueroAId||'', ArqueroA:m.arqueroANombre||'',
+    ArqueroB_ID:m.arqueroBId||'', ArqueroB:m.arqueroBNombre||'',
+    ResultadoTipo:m.estado==='armado'?'':(m.resultadoTipo||'empate'),
+    Diferencia:m.estado==='armado'?'':(m.diferencia||0),
+    NivelPartido:m.estado==='armado'?'':(m.nivelPartido||'parejo'),
+    Mejores:m.estado==='armado'?'':(m.best||[]).join(', '),
+    MasCostaron:m.estado==='armado'?'':(m.worst||[]).join(', '),
+    Notas:m.notas||''
+  }));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(partidos),'Partidos');
+  const hist=[];
+  state.players.forEach(p=>(p.skillHistory||[]).forEach((h,i)=>hist.push({JugadorID:p.id,Jugador:p.name,Fecha:new Date(h.date),Referencia:h.label || (i===0?'Inicial':`P${i}`),Habilidad:Number(h.skill)})));
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(hist),'HistorialRating');
+  const fecha=new Date().toISOString().slice(0,10);
+  const jugados=partidosJugados();
+  const pendientes=partidosPendientes();
+  const siguiente=pendientes.length ? (pendientes[0].numero || (jugados+1)) : (jugados+1);
+  const nombreArchivo=pendientes.length ? `futbol5_base_pendiente_partido_${siguiente}_${fecha}.xlsx` : (jugados>0 ? `futbol5_base_partido_${jugados}_${fecha}.xlsx` : `futbol5_base_inicial_${fecha}.xlsx`);
+  XLSX.writeFile(wb,nombreArchivo);
+  actualizarEstadoExcel(`Excel descargado · ${pendientes.length ? `Partido ${siguiente} armado` : (jugados ? `Partido ${jugados}` : 'Base inicial')}`);
+}
+
+function uid(){ return 'p_' + Math.random().toString(36).slice(2,9); }
+
+function seleccionarPartidoPendiente(id){
+  const match=obtenerPartidoPendiente(id);
+  if(!match) {
+    alert('No encontré ese partido pendiente.');
+    renderStats();
+    return;
+  }
+  sincronizarLastTeamsConPartido(match);
+  guardarEstadoLocal();
+  renderStats();
+  switchTab('resultado');
+}
+
+function abrirPartidosPendientes(){
+  const pendientes=partidosPendientes();
+  if(!pendientes.length){
+    renderStats();
+    return;
+  }
+  // Siempre abre el último partido pendiente seleccionado/guardado,
+  // y si no existe, toma el más reciente.
+  const match = (state.lastTeams?.matchId && obtenerPartidoPendiente(state.lastTeams.matchId))
+    || pendientes[pendientes.length-1];
+  seleccionarPartidoPendiente(match.id);
+}
+
+function renderStats(){
+  const activos = state.players.filter(p=>p.active!==false);
+  const totalJugadores = activos.length;
+  const totalPartidos = partidosJugados();
+  const mujeres = activos.filter(p=>p.gender==='F').length;
+  const varones = activos.filter(p=>p.gender==='M').length;
+  const pendientes = partidosPendientes();
+  const kpiPendiente = pendientes.length ? `
+    <button type="button" class="stat pending-kpi pending-kpi-btn" onclick="abrirPartidosPendientes()" title="Ver partidos pendientes">
+      <div class="n">${pendientes.length}</div>
+      <div class="l">Pendiente${pendientes.length>1?'s':''} · ver partido${pendientes.length>1?'s':''} →</div>
+    </button>` : '';
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat"><div class="n">${totalJugadores}</div><div class="l">Jugadores</div></div>
+    <div class="stat"><div class="n">${mujeres}</div><div class="l">Mujeres</div></div>
+    <div class="stat"><div class="n">${varones}</div><div class="l">Varones</div></div>
+    <div class="stat"><div class="n">${totalPartidos}</div><div class="l">Partidos jugados</div></div>
+    ${kpiPendiente}
+  `;
+}
+
+
+function textoJugadorNormalizado(txt){
+  return String(txt||'').replace(/\s*\([^)]*\)\s*$/,'').trim().toLowerCase();
+}
+function matchIncluyeJugador(m,p){
+  if(!m || m.estado==='armado') return null;
+  const id=p.id;
+  if((m.teamAIds||[]).includes(id)) return 'A';
+  if((m.teamBIds||[]).includes(id)) return 'B';
+  const objetivo=p.name.toLowerCase();
+  const visible=nombreVisible(p).toLowerCase();
+  const enA=(m.teamA||[]).some(x=>textoJugadorNormalizado(x)===objetivo || String(x).toLowerCase()===visible);
+  if(enA) return 'A';
+  const enB=(m.teamB||[]).some(x=>textoJugadorNormalizado(x)===objetivo || String(x).toLowerCase()===visible);
+  if(enB) return 'B';
+  return null;
+}
+function jugadorEstadisticas(p){
+  const stats={jugados:0,ganados:0,perdidos:0,empatados:0,destacados:0,costaron:0};
+  state.matches.filter(m=>m.estado!=='armado').forEach(m=>{
+    const lado=matchIncluyeJugador(m,p);
+    if(!lado) return;
+    stats.jugados++;
+    if(m.resultadoTipo==='empate' || (m.resultadoTipo===undefined && Number(m.scoreA||0)===Number(m.scoreB||0))){
+      stats.empatados++;
+    }else if(m.resultadoTipo==='local'){
+      lado==='A' ? stats.ganados++ : stats.perdidos++;
+    }else if(m.resultadoTipo==='visitante'){
+      lado==='B' ? stats.ganados++ : stats.perdidos++;
+    }
+    const pn=p.name.toLowerCase();
+    const visible=nombreVisible(p).toLowerCase();
+    const best=(m.best||[]).some(x=>textoJugadorNormalizado(x)===pn || String(x).toLowerCase()===visible);
+    const worst=(m.worst||[]).some(x=>textoJugadorNormalizado(x)===pn || String(x).toLowerCase()===visible);
+    if(best) stats.destacados++;
+    if(worst) stats.costaron++;
+  });
+  stats.porcentaje=stats.jugados ? (stats.ganados/stats.jugados)*100 : 0;
+  return stats;
+}
+function renderJugadorStatsPanel(p){
+  if(!p) return '';
+  const s=jugadorEstadisticas(p);
+  return `<div class="player-stats-detail">
+    <div class="player-stats-head">
+      <div><h3>📊 Estadísticas de ${nombreVisible(p)}</h3><div class="desc">${estrellas(p.skill)} ${especialLabel(p.habilidadEspecial)}</div></div>
+      <button class="btn-mini" onclick="cerrarJugadorStats()" title="Cerrar">✕</button>
+    </div>
+    <div class="player-stats-grid">
+      <div><b>${s.jugados}</b><span>Partidos</span></div>
+      <div class="win"><b>${s.ganados}</b><span>Ganados</span></div>
+      <div class="draw"><b>${s.empatados}</b><span>Empatados</span></div>
+      <div class="loss"><b>${s.perdidos}</b><span>Perdidos</span></div>
+      <div class="best"><b>${s.destacados}</b><span>Destacó</span></div>
+      <div class="worst"><b>${s.costaron}</b><span>Costó</span></div>
+    </div>
+    <div class="player-winrate">🏆 Porcentaje de victorias: <strong>${numeroARating(s.porcentaje)}%</strong></div>
+  </div>`;
+}
+function mostrarEstadisticasJugador(id){
+  const p=state.players.find(x=>x.id===id);
+  const el=document.getElementById('playerStatsPanel');
+  if(!p || !el) return;
+  el.innerHTML=renderJugadorStatsPanel(p);
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cerrarJugadorStats(){
+  const el=document.getElementById('playerStatsPanel');
+  if(el) el.innerHTML='';
+}
+
+/* ---------- TAB: PLANTEL ---------- */
+let plantelEditMode = false;
+function togglePlantelEdit(){ plantelEditMode = !plantelEditMode; renderPlantel(); }
+
+function toggleAgregarJugador(){
+  const card=document.querySelector('.add-player-card');
+  const btn=document.querySelector('.add-player-toggle');
+  if(!card || !btn) return;
+  const abierto=card.classList.toggle('is-open');
+  btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+}
+function renderPlantel(){
+  const rows = state.players.filter(p=>p.active!==false)
+    .slice()
+    .sort((a,b)=>{
+      const sa=jugadorEstadisticas(a), sb=jugadorEstadisticas(b);
+      // Ranking del plantel:
+      // 1) más victorias
+      // 2) menos derrotas
+      // 3) más veces destacado
+      // 4) menos veces que le costó
+      // 5) mayor habilidad actual (desempate final)
+      return (
+        (sb.ganados-sa.ganados) ||
+        (sa.perdidos-sb.perdidos) ||
+        (sb.destacados-sa.destacados) ||
+        (sa.costaron-sb.costaron) ||
+        (sb.skill-sa.skill)
+      );
+    })
+    .map(p=>{
+      const s=jugadorEstadisticas(p);
+      return `
+      <tr>
+        <td class="player-cell">
+          ${avatarHTML(p)}<span class="player-name-mobile">${p.apodo || p.name}</span>
+          <span class="gender-tag ${p.gender}">${genderLabel(p.gender)}</span>
+          ${p.esArquero ? `<span class="gk-badge-toggle on" style="cursor:default;">🧤</span>` : ''}
+        </td>
+        <td class="mobile-stats">
+          <span><b>PJ</b> ${s.jugados}</span>
+          <span class="stat-win"><b>G</b> ${s.ganados}</span>
+          <span class="stat-draw"><b>E</b> ${s.empatados}</span>
+          <span class="stat-loss"><b>P</b> ${s.perdidos}</span>
+          <span class="stat-best"><b>⭐</b> ${s.destacados}</span>
+          <span class="stat-worst"><b>🔻</b> ${s.costaron}</span>
+        </td>
+        <td class="skill-cell">${estrellas(p.skill)}</td>
+        <td class="specialty-icon-cell" title="${especialLabel(p.habilidadEspecial)}">${especialIcon(p.habilidadEspecial)}</td>
+        <td class="row-actions">
+          <button class="btn-mini stats-mini" title="Ver estadísticas" onclick="mostrarEstadisticasJugador('${p.id}')">📊</button>
+          ${plantelEditMode ? `<button class="btn-mini" title="Modificar jugador/a" onclick="editarPlayer('${p.id}')">✎</button><button class="del-icon" title="Quitar jugador/a" onclick="deletePlayer('${p.id}')">✕</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="card add-player-card">
+      <h2 class="add-player-title">
+        <button type="button" class="add-player-toggle" onclick="toggleAgregarJugador()" aria-expanded="false">
+          <span>Agregar jugador/a</span><span class="add-player-plus">+</span>
+        </button>
+      </h2>
+      <div class="add-player-body">
+        <div class="specialty-help"><strong>🎯 Habilidad especial</strong><span>Elegí la característica que mejor representa cómo juega habitualmente. Complementa la ⭐ habilidad general y tiene un peso menor en el armado.</span></div>
+        <p class="desc">El puntaje inicial es una estimación tuya de 1 a 10. Este número queda oculto y se muestra con hasta 5 estrellas, incluyendo medias estrellas. Se va a ir ajustando solo después de cada partido.</p>
+      <div class="avatar-add-box">
+        <div class="avatar-preview-wrap"><span id="newAvatarPreview" class="player-avatar preview">?</span></div>
+        <div class="avatar-controls">
+          <label>Avatar del jugador/a</label>
+          <select id="newAvatarTipo" onchange="actualizarAvatarPreview()">
+            ${AVATARES_PREDEFINIDOS.map(a=>`<option value="${a.value}">${a.emoji} — ${a.label}</option>`).join('')}
+          </select>
+          <small>Elegí los colores de un club del fútbol argentino para identificar al jugador/a.</small>
+        </div>
+      </div>
+      <div class="row player-add-row">
+        <div><label>Nombre</label><input type="text" id="newName" placeholder="Ej: Camila"></div>
+        <div><label>Apodo (opcional)</label><input type="text" id="newApodo" placeholder="Ej: Cami"></div>
+        <div style="max-width:110px;"><label>Género</label><select id="newGender"><option value="F">Mujer</option><option value="M">Varón</option></select></div>
+        <div style="max-width:110px;"><label>Puntaje inicial (1-10)</label><input type="number" id="newSkill" min="1" max="10" step="0.5" value="6"></div>
+        <div style="max-width:140px;"><label>¿Arquero?</label><select id="newArquero"><option value="no">No</option><option value="si">Sí</option></select></div>
+        <div class="new-specialty-field" style="max-width:190px;"><label>Habilidad especial</label><select id="newEspecial">${HABILIDADES_ESPECIALES.map(e=>`<option value="${e.value}">${e.label}</option>`).join('')}</select></div>
+        <div style="max-width:140px;"><button class="btn" onclick="addPlayer()">Agregar</button></div>
+      </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Plantel (${state.players.filter(p=>p.active!==false).length})</h2>
+      <p class="desc">Ordenado por rendimiento: primero más victorias, luego menos derrotas, más veces destacado, menos veces que le costó y, en último lugar, habilidad actual para desempatar.</p>
+      <button class="edit-link" onclick="togglePlantelEdit()">${plantelEditMode ? 'Ocultar edición' : 'Editar plantel (modificar / quitar / marcar arquero)'}</button>
+      ${state.players.some(p=>p.active!==false) ? `
+      <div class="table-scroll">
+      <table class="plantel-stats-table" style="margin-top:10px;">
+        <thead><tr><th>Jugador/a</th><th>Estadísticas</th><th>Habilidad</th><th>Especialidad</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>` : `<div class="empty">Todavía no cargaste jugadores.</div>`}
+      <div class="stats-legend"><span><b>PJ</b> partidos</span><span class="stat-win"><b>G</b> ganados</span><span class="stat-draw"><b>E</b> empatados</span><span class="stat-loss"><b>P</b> perdidos</span><span class="stat-best"><b>⭐</b> destacó</span><span class="stat-worst"><b>🔻</b> costó</span></div>
+      <div id="playerStatsPanel"></div>
+    </div>
+
+    ${state.players.some(p=>p.active!==false) ? `
+    <div class="card">
+      <h2>Evolución de habilidad</h2>
+      <p class="desc">Elegí un jugador o jugadora para ver cómo fue cambiando su habilidad partido a partido.</p>
+      <div class="row"><div style="max-width:260px;"><select id="evoSelect">${state.players.filter(p=>p.active!==false).map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('')}</select></div><div style="max-width:140px;"><button class="btn secondary" onclick="mostrarEvolucion()">Ver gráfico</button></div></div>
+      <div id="evoChart"></div>
+    </div>` : ''}
+  `;
+}
+
+function addPlayer(){
+  const name = document.getElementById('newName').value.trim();
+  const apodo = document.getElementById('newApodo').value.trim();
+  const gender = document.getElementById('newGender').value;
+  const skill = parseFloat(document.getElementById('newSkill').value) || 6;
+  const esArquero = document.getElementById('newArquero').value === 'si';
+  const habilidadEspecial = document.getElementById('newEspecial')?.value || '';
+  const avatarTipo = document.getElementById('newAvatarTipo')?.value || 'inicial';
+  if(!name){ alert('Poné un nombre.'); return; }
+  const duplicadoExacto = state.players.some(p=>p.active!==false &&
+    p.name.toLowerCase()===name.toLowerCase() && (p.apodo||'').toLowerCase()===(apodo||'').toLowerCase()
+  );
+  if(duplicadoExacto){
+    alert('Ya existe un jugador con ese nombre y ese apodo. Si es otra persona con el mismo nombre, usá un apodo diferente.'); return;
+  }
+  const skillClamp = Math.min(10,Math.max(1,skill));
+  state.players.push({
+    id:uid(), name, apodo, gender, skill:skillClamp, matchesPlayed:0, active:true, esArquero, habilidadEspecial,
+    avatarTipo, avatarValor:'',
+    skillHistory: [{date: new Date().toISOString(), skill: skillClamp}]
+  });
+  saveState();
+  renderPlantel(); renderStats();
+  renderPlantel(); renderStats();
+}
+
+function mostrarEvolucion(){
+  const id = document.getElementById('evoSelect').value;
+  const p = state.players.find(x=>x.id===id);
+  document.getElementById('evoChart').innerHTML = dibujarEvolucion(p);
+}
+
+function dibujarEvolucion(p){
+  const hist = (p.skillHistory && p.skillHistory.length)
+    ? p.skillHistory
+    : [{date:new Date().toISOString(), skill:p.skill}];
+  if(hist.length < 2){
+    return `<p class="desc">${p.name} todavía no tiene suficientes partidos cargados para graficar la evolución.</p>`;
+  }
+
+  // El primer punto es la habilidad inicial; a partir de ahí cada punto
+  // representa exclusivamente un partido jugado: P1, P2, P3...
+  const w=760, h=260, padL=48, padR=30, padT=24, padB=48;
+  const min=1, max=10;
+  const stepX = hist.length===1 ? 0 : (w-padL-padR)/(hist.length-1);
+  const scaleY = v => h-padB - ((v-min)/(max-min))*(h-padT-padB);
+  const pts = hist.map((pt,i)=>({
+    x: padL+i*stepX,
+    y: scaleY(pt.skill),
+    v: pt.skill,
+    date: pt.date,
+    match:i
+  }));
+  const polyline = pts.map(pt=>`${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ');
+
+  const labels = pts.map((pt,i)=>{
+    const etiqueta = i===0 ? '' : `P${i}`;
+    const fecha = new Date(pt.date).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
+    const labelX = pt.x.toFixed(1);
+    const yLabel = (h-padB+25).toFixed(1);
+    return `
+      <circle cx="${labelX}" cy="${pt.y.toFixed(1)}" r="${i===hist.length-1?'5':'4'}"
+        fill="#D6A43F" stroke="#0D100E" stroke-width="2">
+        <title>${i===0 ? 'Habilidad inicial' : etiqueta} · ${fecha} · ${pt.v.toFixed(1)}/10</title>
+      </circle>
+      ${etiqueta ? `<text x="${labelX}" y="${yLabel}" font-size="11" font-weight="700" fill="#C8C9C3" font-family="Work Sans" text-anchor="middle">${etiqueta}</text>` : ''}
+    `;
+  }).join('');
+
+  const gridLines = [2,4,6,8,10].map(v=>`
+    <line x1="${padL}" y1="${scaleY(v).toFixed(1)}" x2="${w-padR}" y2="${scaleY(v).toFixed(1)}"
+      stroke="rgba(214,164,63,.16)" stroke-width="1"/>
+    <text x="5" y="${(scaleY(v)+4).toFixed(1)}" font-size="10"
+      fill="#777D76" font-family="Work Sans">${(v/2).toFixed(1)}★</text>
+  `).join('');
+
+  const gradientId = `evoGradient_${p.id}`;
+  const areaPoints = `${pts[0].x.toFixed(1)},${(h-padB).toFixed(1)} ${polyline} ${pts[pts.length-1].x.toFixed(1)},${(h-padB).toFixed(1)}`;
+
+  return `
+  <div class="evo-chart-shell">
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="270" style="margin-top:8px;overflow:visible;" role="img" aria-label="Evolución de habilidad de ${nombreVisible(p)}">
+      <defs>
+        <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#D6A43F" stop-opacity=".18"/>
+          <stop offset="100%" stop-color="#D6A43F" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      ${gridLines}
+      <polygon points="${areaPoints}" fill="url(#${gradientId})"/>
+      <polyline points="${polyline}" fill="none" stroke="#D6A43F" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round"/>
+      ${labels}
+    </svg>
+    <div class="evo-current">
+      <span>Habilidad actual</span>
+      <strong>${p.skill.toFixed(1)} / 10</strong>
+    </div>
+  </div>`;
+}
+
+function toggleArquero(id){
+  const p = state.players.find(x=>x.id===id);
+  if(p){ p.esArquero = !p.esArquero; saveState(); renderPlantel(); }
+}
+
+function cambiarAvatarJugador(id){
+  const p=state.players.find(x=>x.id===id);
+  if(!p) return;
+  const opciones=AVATARES_PREDEFINIDOS.map((a,i)=>`${i+1}. ${a.emoji} — ${a.label}`).join('\n');
+  const eleccion=prompt(`Elegí avatar para ${nombreVisible(p)}:\n\n${opciones}\n\nEscribí 1-${AVATARES_PREDEFINIDOS.length}.`, '');
+  if(eleccion===null) return;
+  const n=Number(eleccion);
+  if(n>=1 && n<=AVATARES_PREDEFINIDOS.length){
+    p.avatarTipo=AVATARES_PREDEFINIDOS[n-1].value;
+    p.avatarValor='';
+    saveState(); renderPlantel(); renderStats();
+    return;
+  }
+  alert('Elegí una opción válida.');
+}
+
+function editarPlayer(id){
+  const p = state.players.find(x=>x.id===id);
+  if(!p) return;
+  const name = prompt('Nombre', p.name);
+  if(name===null) return;
+  const nombreNuevo=name.trim();
+  if(!nombreNuevo){ alert('El nombre no puede quedar vacío.'); return; }
+  const apodo = prompt('Apodo (opcional)', p.apodo||'');
+  if(apodo===null) return;
+  const apodoNuevo=apodo.trim();
+  const genderInput=prompt('Género: escribí M para varón o F para mujer', p.gender);
+  if(genderInput===null) return;
+  const genderNuevo=genderInput.trim().toUpperCase();
+  if(!['M','F'].includes(genderNuevo)){ alert('El género debe ser M o F.'); return; }
+  const skillInput=prompt('Puntaje actual (1 a 10)', String(p.skill));
+  if(skillInput===null) return;
+  const skillNuevo=parseFloat(String(skillInput).replace(',','.'));
+  if(!Number.isFinite(skillNuevo) || skillNuevo<1 || skillNuevo>10){ alert('El puntaje debe estar entre 1 y 10.'); return; }
+  const arqueroInput=prompt('¿Arquero? escribí SI o NO', p.esArquero?'SI':'NO');
+  if(arqueroInput===null) return;
+  const arqueroNuevo=arqueroInput.trim().toUpperCase();
+  if(!['SI','NO'].includes(arqueroNuevo)){ alert('Escribí SI o NO.'); return; }
+
+  const duplicado=state.players.some(x=>x.id!==id && x.active!==false && x.name.toLowerCase()===nombreNuevo.toLowerCase() && (x.apodo||'').toLowerCase()===apodoNuevo.toLowerCase());
+  if(duplicado){ alert('Ya existe otro jugador con ese nombre y ese apodo.'); return; }
+
+  const teniaPartidos=(p.matchesPlayed||0)>0 || state.matches.some(m=>(m.teamAIds||[]).includes(id)||(m.teamBIds||[]).includes(id));
+  p.name=nombreNuevo;
+  p.apodo=apodoNuevo;
+  p.gender=genderNuevo;
+  p.esArquero=arqueroNuevo==='SI';
+  p.skill=Math.min(10,Math.max(1,skillNuevo));
+  // Si todavía no jugó, corregimos también el punto inicial del historial.
+  // Si ya jugó, conservamos la evolución histórica y aplicamos el cambio al rating actual.
+  if(!teniaPartidos){
+    if(!p.skillHistory || !p.skillHistory.length) p.skillHistory=[{date:new Date().toISOString(),skill:p.skill,label:'Inicial'}];
+    else p.skillHistory[0].skill=p.skill;
+  }
+  saveState();
+  renderPlantel(); renderStats();
+}
+
+function deletePlayer(id){
+  const p = state.players.find(x=>x.id===id);
+  if(!p) return;
+  const tieneHistorial=(p.matchesPlayed||0)>0 || state.matches.some(m=>(m.teamAIds||[]).includes(id)||(m.teamBIds||[]).includes(id));
+  if(tieneHistorial){
+    if(!confirm(`¿Quitar a ${nombreVisible(p)} del plantel activo? Tiene historial y se conservará para no romper los partidos anteriores.`)) return;
+    p.active=false;
+  }else{
+    if(!confirm(`¿Eliminar definitivamente a ${nombreVisible(p)} del plantel?`)) return;
+    state.players=state.players.filter(x=>x.id!==id);
+    state.forbiddenPairs=state.forbiddenPairs.filter(([a,b])=>a!==id && b!==id);
+  }
+  saveState();
+  renderPlantel(); renderStats();
+}
+
+/* ---------- TAB: REGLAS ---------- */
+function renderReglas(){
+  const options = state.players.filter(p=>p.active!==false).map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
+  const pairs = state.forbiddenPairs.map(([a,b],i)=>{
+    const pa = state.players.find(p=>p.id===a);
+    const pb = state.players.find(p=>p.id===b);
+    if(!pa || !pb) return '';
+    return `<span class="pill">${nombreVisible(pa)} + ${nombreVisible(pb)} · equipos diferentes <button onclick="removePair(${i})">✕</button></span>`;
+  }).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="card">
+      <h2>Regla fija: distribución femenina</h2>
+      <p class="desc">Se aplica automáticamente: el sistema busca una composición equilibrada entre ambos equipos y, cuando la cantidad total es impar, decide la distribución que mejor contribuye al equilibrio general.</p>
+    </div>
+
+    <div class="card">
+      <h2>Compatibilidades de equipo</h2>
+      <p class="desc">Podés indicar dos jugadores que preferís mantener en equipos diferentes. El sistema tendrá en cuenta esta condición al generar los equipos.</p>
+      <div class="row">
+        <div><label>Jugador/a 1</label><select id="pairA">${options}</select></div>
+        <div><label>Jugador/a 2</label><select id="pairB">${options}</select></div>
+        <div style="max-width:140px;"><button class="btn" onclick="addPair()">Agregar regla</button></div>
+      </div>
+      <div style="margin-top:14px;">${pairs || '<span class="desc">Todavía no cargaste ninguna.</span>'}</div>
+    </div>
+  `;
+}
+
+function addPair(){
+  const a = document.getElementById('pairA').value;
+  const b = document.getElementById('pairB').value;
+  if(!a || !b || a===b){ alert('Elegí dos jugadores distintos.'); return; }
+  const exists = state.forbiddenPairs.some(([x,y])=> (x===a&&y===b)||(x===b&&y===a));
+  if(exists){ alert('Esa regla ya existe.'); return; }
+  state.forbiddenPairs.push([a,b]);
+  saveState();
+  renderReglas();
+}
+
+function removePair(i){
+  state.forbiddenPairs.splice(i,1);
+  saveState();
+  renderReglas();
+}
+
+/* ---------- TAB: ARMAR PARTIDO ---------- */
+let seleccionHoy = new Set();
+
+function renderArmar(){
+  if(seleccionHoy.size===0 && state.players.length>0 && !window._seleccionVaciada){
+    seleccionHoy = new Set(state.players.filter(p=>p.active!==false).slice(0,10).map(p=>p.id));
+  }
+  const selectionFull=seleccionHoy.size>=10;
+  const items = state.players.filter(p=>p.active!==false).map(p=>`
+    <label class="check-item ${seleccionHoy.has(p.id)?'selected':''}">
+      <input type="checkbox" value="${p.id}" ${seleccionHoy.has(p.id)?'checked':''} ${selectionFull && !seleccionHoy.has(p.id)?'disabled':''} onchange="toggleSeleccion('${p.id}', this.checked)">
+      ${avatarHTML(p,'player-avatar club-avatar')}
+      <span class="check-player-name">${nombreVisible(p)}${p.esArquero?' 🧤':''}</span>
+      ${ratingCompact(p.skill)}
+    </label>
+  `).join('');
+
+  const hayPartidoAnterior = state.matches.some(m=>m.estado==='jugado');
+  document.getElementById('content').innerHTML = `
+    <div class="card armar-selection-card ${selectionFull?'selection-complete':''}">
+      <h2>¿Quién juega hoy?</h2>
+      <p class="desc">Marcá entre 6 y 10 jugadores. Al llegar a 10, el resto queda bloqueado hasta que saques a uno.</p>
+      <div class="select-tools">
+        <button class="btn secondary small" onclick="marcarTodos()">Marcar primeros 10</button>
+        <button class="btn secondary small" onclick="limpiarSeleccion()">Vaciar selección</button>
+        ${hayPartidoAnterior ? `<button class="btn secondary small" onclick="repetirUltimoPartido()">Usar los mismos que la fecha anterior</button>` : ''}
+      </div>
+      ${state.players.some(p=>p.active!==false) ? `<div class="check-grid">${items}</div>` : `<div class="empty">Cargá jugadores primero en la pestaña Plantel.</div>`}
+      <div class="armar-actions">
+        <button class="btn" onclick="generarEquipos()">⚽ Generar equipos</button>
+        <span id="seleccionCount" class="desc"></span>
+      </div>
+      <div id="msgArmar"></div>
+    </div>
+  `;
+  actualizarContadorSeleccion();
+}
+
+function marcarTodos(){
+  window._seleccionVaciada=false;
+  seleccionHoy = new Set(state.players.filter(p=>p.active!==false).slice(0,10).map(p=>p.id));
+  renderArmar();
+}
+function limpiarSeleccion(){
+  window._seleccionVaciada=true;
+  seleccionHoy = new Set();
+  renderArmar();
+}
+function repetirUltimoPartido(){
+  window._seleccionVaciada=false;
+  const ult = state.matches.find(m=>m.estado==='jugado');
+  if(!ult){ alert('Todavía no hay partidos en el historial.'); return; }
+  let ids = [];
+  if(ult.teamAIds && ult.teamBIds){
+    ids = [...ult.teamAIds, ...ult.teamBIds].filter(id=>state.players.some(p=>p.id===id));
+  } else {
+    // partidos guardados antes de tener este campo: buscamos por nombre
+    const nombres = [...(ult.teamA||[]), ...(ult.teamB||[])];
+    ids = nombres.map(n=>state.players.find(p=>nombreVisible(p)===n || p.name===n)).filter(Boolean).map(p=>p.id);
+  }
+  if(!ids.length){ alert('No pude encontrar a esos jugadores en el plantel actual.'); return; }
+  seleccionHoy = new Set(ids);
+  renderArmar();
+}
+
+function toggleSeleccion(id, checked){
+  window._seleccionVaciada=false;
+  if(checked){
+    if(seleccionHoy.size>=10 && !seleccionHoy.has(id)){
+      alert('Ya seleccionaste 10 jugadores. Quitá uno antes de agregar otro.');
+      return;
+    }
+    seleccionHoy.add(id);
+  }else{
+    seleccionHoy.delete(id);
+  }
+  // Re-renderizamos siempre: así, si había 10 y quitás uno, los demás
+  // quedan inmediatamente habilitados para seleccionar otro.
+  renderArmar();
+}
+
+function actualizarContadorSeleccion(){
+  const el = document.getElementById('seleccionCount');
+  if(el) el.textContent = `${seleccionHoy.size} / 10 seleccionados` + (seleccionHoy.size >= 6 && seleccionHoy.size < 10 ? ` · partido incompleto` : '') + (seleccionHoy.size===10 ? ' · máximo alcanzado' : '');
+}
+
+function generarEquipos(){
+  const msg = document.getElementById('msgArmar');
+  if(seleccionHoy.size < 6 || seleccionHoy.size > 10){
+    msg.innerHTML = `<div class="msg warn">Seleccioná entre 6 y 10 jugadores (llevás ${seleccionHoy.size}).</div>`;
+    return;
+  }
+  msg.innerHTML = '';
+  const seleccionados = state.players.filter(p=>seleccionHoy.has(p.id));
+  const best = mejorDivision(seleccionados, state.forbiddenPairs);
+  if(!best){
+    msg.innerHTML = `<div class="msg warn">No encontré ninguna combinación que respete todas las reglas. Revisá las parejas prohibidas.</div>`;
+    return;
+  }
+  const ahora=new Date().toISOString();
+  const siguienteNumero=state.matches.reduce((max,m)=>Math.max(max,Number(m.numero)||0),0)+1;
+  const partidoArmado={
+    id:uid(), numero:siguienteNumero, estado:'armado', fechaArmado:ahora, date:ahora,
+    teamAIds:best.teamA.map(p=>p.id), teamBIds:best.teamB.map(p=>p.id),
+    teamA:best.teamA.map(p=>nombreVisible(p)), teamB:best.teamB.map(p=>nombreVisible(p)),
+    skillSnapshotA:Object.fromEntries(best.teamA.map(p=>[p.id,p.skill])),
+    skillSnapshotB:Object.fromEntries(best.teamB.map(p=>[p.id,p.skill])),
+    arqueroAId:null, arqueroBId:null, arqueroANombre:null, arqueroBNombre:null,
+    resultadoTipo:'empate', diferencia:0, nivelPartido:'', best:[], worst:[], notas:''
+  };
+  // Si ya había un partido armado en edición, lo reemplazamos: no generamos duplicados.
+  const anterior=state.lastTeams?.matchId ? obtenerPartidoPendiente(state.lastTeams.matchId) : null;
+  if(anterior){
+    const idx=state.matches.findIndex(m=>m.id===anterior.id);
+    state.matches[idx]=partidoArmado;
+  } else {
+    state.matches.unshift(partidoArmado);
+  }
+  sincronizarLastTeamsConPartido(partidoArmado);
+  saveState();
+  renderStats();
+  actualizarEstadoExcel(`Partido ${partidoArmado.numero} armado · pendiente de jugar`);
+  mostrarEquipos(best);
+}
+
+// combinaciones de 5 sobre 10, evaluando cada división en las dos mitades
+function mejorDivision(jugadores, forbidden){
+  const n = jugadores.length;
+  const tamA = Math.ceil(n/2);
+  const indices = jugadores.map((_,i)=>i);
+  const combos = combinacionesDe(indices, tamA);
+  let mejor = null;
+  const vistos = new Set();
+
+  for(const comboA of combos){
+    const setA = new Set(comboA);
+    const key = comboA.slice().sort((a,b)=>a-b).join(',');
+    const comboB = indices.filter(i=>!setA.has(i));
+    const keyB = comboB.slice().sort((a,b)=>a-b).join(',');
+    const canon = key < keyB ? key : keyB;
+    if(vistos.has(canon)) continue;
+    vistos.add(canon);
+
+    const teamA = comboA.map(i=>jugadores[i]);
+    const teamB = comboB.map(i=>jugadores[i]);
+    if(!cumpleReglas(teamA, teamB, forbidden)) continue;
+
+    const skillA = teamA.reduce((s,p)=>s+habilidadCompetitiva(p),0);
+    const skillB = teamB.reduce((s,p)=>s+habilidadCompetitiva(p),0);
+    const diff = Math.abs(skillA/teamA.length - skillB/teamB.length);
+
+    const femA = teamA.filter(p=>p.gender==='F').length;
+    const femB = teamB.filter(p=>p.gender==='F').length;
+    const femDiff = Math.abs(femA - femB);
+
+    // Balance de perfiles: la especialidad es secundaria y nunca reemplaza la habilidad.
+    const perfilA = ['ataque','defensa','movimiento','creacion'].map(k =>
+      teamA.reduce((s,p)=>s+perfilCompetitivo(p)[k],0)
+    );
+    const perfilB = ['ataque','defensa','movimiento','creacion'].map(k =>
+      teamB.reduce((s,p)=>s+perfilCompetitivo(p)[k],0)
+    );
+    const perfilDiff = perfilA.reduce((s,v,i)=>s+Math.abs(v-perfilB[i]),0);
+
+    // Prioridad:
+    // 1) distribución femenina (regla fija)
+    // 2) fuerza competitiva
+    // 3) perfiles/especialidades
+    const score = femDiff*1000 + diff*100 + perfilDiff;
+
+    if(!mejor || score < mejor.score){
+      mejor = {
+        teamA, teamB,
+        skillA, skillB, diff,
+        rawA:promedioHabilidad(teamA),
+        rawB:promedioHabilidad(teamB),
+        femDiff, perfilDiff, score
+      };
+    }
+  }
+  return mejor;
+}
+function cumpleReglas(teamA, teamB, forbidden){
+  for(const [a,b] of forbidden){
+    const enA = teamA.some(p=>p.id===a) && teamA.some(p=>p.id===b);
+    const enB = teamB.some(p=>p.id===a) && teamB.some(p=>p.id===b);
+    if(enA || enB) return false;
+  }
+  return true;
+}
+
+function combinacionesDe(arr, k){
+  const result = [];
+  function backtrack(start, actual){
+    if(actual.length === k){ result.push(actual.slice()); return; }
+    for(let i=start;i<arr.length;i++){
+      actual.push(arr[i]);
+      backtrack(i+1, actual);
+      actual.pop();
+    }
+  }
+  backtrack(0, []);
+  return result;
+}
+
+function mostrarEquipos(best){
+  const global = fuerzaGlobal(best.teamA, best.teamB);
+  state.lastTeams.teamA = best.teamA.map(p=>p.id);
+  state.lastTeams.teamB = best.teamB.map(p=>p.id);
+  saveState();
+  renderEditorEquipos();
+}
+
+function renderEditorEquipos(){
+  if(!state.lastTeams) return;
+  const teamA = state.lastTeams.teamA.map(id=>state.players.find(p=>p.id===id)).filter(Boolean);
+  const teamB = state.lastTeams.teamB.map(id=>state.players.find(p=>p.id===id)).filter(Boolean);
+  const skillA = teamA.reduce((s,p)=>s+habilidadCompetitiva(p),0);
+  const skillB = teamB.reduce((s,p)=>s+habilidadCompetitiva(p),0);
+  const forceA = skillA/teamA.length;
+  const forceB = skillB/teamB.length;
+  const global = fuerzaGlobal(teamA,teamB);
+  const diff = Math.abs(forceA-forceB);
+  const rawA = promedioHabilidad(teamA);
+  const rawB = promedioHabilidad(teamB);
+  const listA = teamA.map(p=>`<li class="team-player" draggable="true" ondragstart="arrastrarJugador(event,'${p.id}')" ondragover="event.preventDefault()" ondrop="soltarJugador(event,'${p.id}')">${avatarHTML(p)}<span class="team-player-name">${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span>${ratingCompact(p.skill)}</span></li>`).join('');
+  const listB = teamB.map(p=>`<li class="team-player" draggable="true" ondragstart="arrastrarJugador(event,'${p.id}')" ondragover="event.preventDefault()" ondrop="soltarJugador(event,'${p.id}')">${avatarHTML(p)}<span class="team-player-name">${nombreVisible(p)}${p.esArquero?' 🧤':''}</span><span>${ratingCompact(p.skill)}</span></li>`).join('');
+  const optsA = `<option value="">— Elegí jugador —</option>` + teamA.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
+  const optsB = `<option value="">— Elegí reemplazo —</option>` + teamB.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
+  const optsB2 = `<option value="">— Elegí jugador —</option>` + teamB.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
+  const optsA2 = `<option value="">— Elegí reemplazo —</option>` + teamA.map(p=>`<option value="${p.id}">${nombreVisible(p)}</option>`).join('');
+  const reglasOk = cumpleReglas(teamA,teamB,state.forbiddenPairs);
+  document.getElementById('content').innerHTML = `
+    <div class="card armar-result-screen">
+      <div class="back-selection"><button class="btn secondary small" onclick="volverASeleccionJugadores()">← Cambiar jugadores</button></div>
+      <h2>Equipos de hoy · Partido ${obtenerPartidoPendiente(state.lastTeams.matchId)?.numero||''}</h2>
+      <div class="msg ok" style="margin-bottom:10px;">📌 Armado guardado automáticamente como <b>partido pendiente</b> en este dispositivo. Exportá el Excel si querés compartirlo o tener un respaldo.</div>
+      <p class="desc">Los equipos fueron armados buscando el mayor equilibrio posible entre habilidades y las reglas configuradas. ${teamA.length} vs ${teamB.length} jugadores.</p>
+      <div class="global-balance ${reglasOk?'':'warn-balance'}">
+        <strong>Fuerza competitiva global: ${numeroARating(global)} / 10</strong>
+        <span>Local: ${numeroARatingPreciso(forceA)} · Visitante: ${numeroARatingPreciso(forceB)} · Diferencia: ${numeroARatingPreciso(diff)}</span>
+      </div>
+      ${!reglasOk ? `<div class="msg warn">⚠️ La modificación manual actual incumple una regla configurada. Volvé a intercambiar jugadores.</div>` : ''}
+      <div class="teams-wrap">
+        <div class="team-col A">
+          <h3>Equipo local</h3>
+          <ul ondragover="event.preventDefault()">${listA}</ul>
+          <div class="total">
+            Fuerza competitiva: <b>${numeroARatingPreciso(forceA)} / 10</b>
+            <span class="team-raw-skill">Habilidad promedio: ${numeroARatingPreciso(rawA)} / 10</span>
+          </div>
+        </div>
+        <div class="team-col B">
+          <h3>Equipo visitante</h3>
+          <ul ondragover="event.preventDefault()">${listB}</ul>
+          <div class="total">
+            Fuerza competitiva: <b>${numeroARatingPreciso(forceB)} / 10</b>
+            <span class="team-raw-skill">Habilidad promedio: ${numeroARatingPreciso(rawB)} / 10</span>
+          </div>
+        </div>
+      </div>
+      <div class="edit-teams-box">
+        <strong>✋ Ajustar equipos manualmente</strong>
+        <p class="desc">Arrastrá un jugador sobre otro para intercambiarlos. También podés seleccionar un jugador y reemplazarlo por uno del otro equipo.</p>
+        <div class="row">
+          <div><label>Local: reemplazar</label><select id="swapA">${optsA}</select></div>
+          <div><label>por visitante</label><select id="swapB">${optsB}</select></div>
+          <div style="max-width:150px;"><button class="btn secondary" onclick="reemplazarJugador('A')">Reemplazar</button></div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <div><label>Visitante: reemplazar</label><select id="swapB2">${optsB2}</select></div>
+          <div><label>por local</label><select id="swapA2">${optsA2}</select></div>
+          <div style="max-width:150px;"><button class="btn secondary" onclick="reemplazarJugador('B')">Reemplazar</button></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:14px;">
+        <div><label>🧤 Arquero de hoy — Local</label><select id="arqueroA" onchange="setArquero('A', this.value)">${`<option value="">— Sin arquero fijo —</option>` + teamA.map(p=>`<option value="${p.id}" ${state.lastTeams.arqueroA===p.id?'selected':''}>${nombreVisible(p)}</option>`).join('')}</select></div>
+        <div><label>🧤 Arquero de hoy — Visitante</label><select id="arqueroB" onchange="setArquero('B', this.value)">${`<option value="">— Sin arquero fijo —</option>` + teamB.map(p=>`<option value="${p.id}" ${state.lastTeams.arqueroB===p.id?'selected':''}>${nombreVisible(p)}</option>`).join('')}</select></div>
+      </div>
+      <div id="canchaWrap">${dibujarCancha(teamA, teamB, state.lastTeams.arqueroA, state.lastTeams.arqueroB)}</div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn secondary" onclick="switchTab('resultado')">Ir a cargar resultado →</button>
+        <button class="btn secondary" onclick="exportarExcel()">📤 Guardar Excel — partido pendiente</button>
+      </div>
+    </div>
+  `;
+  window._lastBest = {teamA,teamB,skillA,skillB,diff};
+}
+
+function volverASeleccionJugadores(){
+  renderArmar();
+}
+
+function arrastrarJugador(event,id){
+  event.dataTransfer.setData('text/plain',id);
+  event.dataTransfer.effectAllowed='move';
+}
+function soltarJugador(event,targetId){
+  event.preventDefault();
+  const sourceId=event.dataTransfer.getData('text/plain');
+  if(!sourceId || sourceId===targetId) return;
+  const a=state.lastTeams.teamA, b=state.lastTeams.teamB;
+  const sourceTeam=a.includes(sourceId)?'A':(b.includes(sourceId)?'B':null);
+  const targetTeam=a.includes(targetId)?'A':(b.includes(targetId)?'B':null);
+  if(!sourceTeam || !targetTeam || sourceTeam===targetTeam) return;
+  intercambiarJugadores(sourceId,targetId);
+}
+function intercambiarJugadores(idA,idB){
+  const a=state.lastTeams.teamA, b=state.lastTeams.teamB;
+  const ia=a.indexOf(idA), ib=b.indexOf(idA);
+  const ja=a.indexOf(idB), jb=b.indexOf(idB);
+  if(ia>=0 && jb>=0){ a[ia]=idB; b[jb]=idA; }
+  else if(ib>=0 && ja>=0){ b[ib]=idA; a[ja]=idB; }
+  else return;
+  if(state.lastTeams.arqueroA===idA) state.lastTeams.arqueroA=null;
+  if(state.lastTeams.arqueroB===idA) state.lastTeams.arqueroB=null;
+  if(state.lastTeams.arqueroA===idB) state.lastTeams.arqueroA=null;
+  if(state.lastTeams.arqueroB===idB) state.lastTeams.arqueroB=null;
+  actualizarPartidoArmadoDesdeLastTeams();
+  saveState();
+  renderEditorEquipos();
+}
+function reemplazarJugador(lado){
+  const idA = lado==='A' ? document.getElementById('swapA').value : document.getElementById('swapA2').value;
+  const idB = lado==='A' ? document.getElementById('swapB').value : document.getElementById('swapB2').value;
+  if(!idA || !idB){ alert('Seleccioná el jugador a reemplazar y el reemplazo.'); return; }
+  intercambiarJugadores(idA,idB);
+}
+
+function setArquero(team, id){
+  if(!state.lastTeams) return;
+  if(team==='A') state.lastTeams.arqueroA = id || null;
+  else state.lastTeams.arqueroB = id || null;
+  actualizarPartidoArmadoDesdeLastTeams();
+  saveState();
+  const best = window._lastBest;
+  if(best && document.getElementById('canchaWrap')) document.getElementById('canchaWrap').innerHTML = dibujarCancha(best.teamA, best.teamB, state.lastTeams.arqueroA, state.lastTeams.arqueroB);
+}
+
+// Formación fija 2-1-2 para 5 jugadores, sin superposición. Equipo local ataca hacia la derecha, visitante hacia la izquierda.
+function posicionesFormacion(cantidad, lado){
+  if(cantidad <= 0) return [];
+  const x = lado==='A' ? {fondo:85, medio:175, ataque:265} : {fondo:515, medio:425, ataque:335};
+  const cy = 170;
+  if(cantidad===1) return [{x:x.medio,y:cy}];
+  if(cantidad===2) return [{x:x.fondo,y:cy-45},{x:x.ataque,y:cy+45}];
+  if(cantidad===3) return [{x:x.fondo,y:cy},{x:x.medio,y:cy-60},{x:x.ataque,y:cy+60}];
+  if(cantidad===4) return [{x:x.fondo,y:cy-65},{x:x.fondo,y:cy+65},{x:x.ataque,y:cy-65},{x:x.ataque,y:cy+65}];
+  return [{x:x.fondo,y:cy-80},{x:x.fondo,y:cy+80},{x:x.medio,y:cy},{x:x.ataque,y:cy-80},{x:x.ataque,y:cy+80}];
+}
+
+function esArqueroDeHoy(p, arqueroRef){
+  if(!arqueroRef) return false;
+  return p.id === arqueroRef || p.name === arqueroRef;
+}
+
+function dibujarCancha(teamA, teamB, arqueroA, arqueroB){
+  const posA = posicionesFormacion(teamA.length,'A');
+  const posB = posicionesFormacion(teamB.length,'B');
+  const dotsA = teamA.map((p,i)=>{
+    const pos = posA[i];
+    const esGK = esArqueroDeHoy(p, arqueroA);
+    return `
+    <circle cx="${pos.x}" cy="${pos.y}" r="17" fill="#C1272D" stroke="${esGK?'#5B2E8C':'#fff'}" stroke-width="${esGK?4:2.5}"/>
+    <text x="${pos.x}" y="${pos.y+32}" font-size="12" text-anchor="middle" fill="#fff" font-family="Work Sans" font-weight="600">${p.name.split(' ')[0]}${esGK?' 🧤':''}</text>`;
+  }).join('');
+  const dotsB = teamB.map((p,i)=>{
+    const pos = posB[i];
+    const esGK = esArqueroDeHoy(p, arqueroB);
+    return `
+    <circle cx="${pos.x}" cy="${pos.y}" r="17" fill="#FFFFFF" stroke="${esGK?'#5B2E8C':'#C1272D'}" stroke-width="${esGK?4:2.5}"/>
+    <text x="${pos.x}" y="${pos.y+32}" font-size="12" text-anchor="middle" fill="#fff" font-family="Work Sans" font-weight="600">${p.name.split(' ')[0]}${esGK?' 🧤':''}</text>`;
+  }).join('');
+  return `
+  <svg class="field-svg" viewBox="0 0 600 340" width="100%" height="280">
+    <rect x="4" y="4" width="592" height="332" rx="10" fill="#1F6B3F" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+    <line x1="300" y1="4" x2="300" y2="336" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+    <circle cx="300" cy="170" r="45" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+    <rect x="4" y="90" width="70" height="160" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+    <rect x="526" y="90" width="70" height="160" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+    ${dotsA}${dotsB}
+  </svg>`;
+}
+
+/* ---------- TAB: CARGAR RESULTADO ---------- */
+function renderResultado(){
+  const pendientes=partidosPendientes();
+  if(!pendientes.length){
+    document.getElementById('content').innerHTML = `
+      <div class="card">
+        <h2>Cargar resultado</h2>
+        <div class="empty">No hay partidos armados pendientes de resultado. Primero armá un partido en "Armar partido".</div>
+      </div>`;
+    return;
+  }
+  let match=state.lastTeams?.matchId ? obtenerPartidoPendiente(state.lastTeams.matchId) : null;
+  if(!match) match=pendientes[0];
+  sincronizarLastTeamsConPartido(match);
+  const teamA = match.teamAIds.map(id=>state.players.find(p=>p.id===id)).filter(Boolean);
+  const teamB = match.teamBIds.map(id=>state.players.find(p=>p.id===id)).filter(Boolean);
+  const todos = [...teamA, ...teamB];
+  const arqueroIds = [state.lastTeams.arqueroA, state.lastTeams.arqueroB].filter(Boolean);
+
+  const checkBest = todos.map(p=>`
+    <label class="check-item"><input type="checkbox" value="${p.id}" class="chkBest" onchange="sincronizarEvaluaciones()">${nombreVisible(p)}${arqueroIds.includes(p.id)?' 🧤':''}</label>
+  `).join('');
+  const checkWorst = todos.map(p=>`
+    <label class="check-item"><input type="checkbox" value="${p.id}" class="chkWorst" onchange="sincronizarEvaluaciones()">${nombreVisible(p)}${arqueroIds.includes(p.id)?' 🧤':''}</label>
+  `).join('');
+  const notaArquero = arqueroIds.length ? `<p class="desc">🧤 Los marcados como arquero no pierden puntaje aunque queden tildados en "los que más costaron".</p>` : '';
+
+  document.getElementById('content').innerHTML = `
+    <div class="card">
+      <h2>Cargar resultado</h2>
+      <p class="desc">Primero armás el partido y queda guardado como <b>pendiente</b>. Cuando efectivamente se juega, volvés acá, elegís ese partido y recién ahí cargás el resultado y la evaluación.</p>
+      ${pendientes.length>1 ? `<div style="margin-bottom:14px;"><label>Partido pendiente</label><select id="pendienteSelect" onchange="seleccionarPartidoPendiente(this.value)">${pendientes.map((m,i)=>`<option value="${m.id}" ${m.id===match.id?'selected':''}>Partido ${i+1} · armado ${new Date(m.fechaArmado||m.date).toLocaleDateString('es-AR')}</option>`).join('')}</select></div>` : `<div class="msg ok">📌 Partido ${match.numero||state.matches.indexOf(match)+1} armado el ${new Date(match.fechaArmado||match.date).toLocaleDateString('es-AR')} · ${teamA.length} vs ${teamB.length}</div>`} 
+      <div style="margin:12px 0;"><strong>Local:</strong> ${teamA.map(nombreVisible).join(', ')}<br><strong>Visitante:</strong> ${teamB.map(nombreVisible).join(', ')}</div>
+      <div class="row">
+        <div>
+          <label>Resultado</label>
+          <select id="resultadoTipo" onchange="toggleDiffWrap()">
+            <option value="empate">Empate</option>
+            <option value="local">Ganó el equipo local</option>
+            <option value="visitante">Ganó el equipo visitante</option>
+          </select>
+        </div>
+        <div id="diffWrap">
+          <label>Diferencia de gol</label>
+          <input type="number" id="diffGoles" min="1" value="1">
+        </div>
+        <div>
+          <label>¿Qué tan parejo estuvo?</label>
+          <select id="nivelPartido">
+            <option value="parejo">Muy parejo</option>
+            <option value="peleado">Peleado</option>
+            <option value="desnivelado">Desnivelado</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <label>Mejores del partido (opcional, se puede elegir más de uno)</label>
+        <div class="check-grid">${checkBest}</div>
+      </div>
+      <div style="margin-top:14px;">
+        <label>Los que más costaron (opcional)</label>
+        <div class="check-grid">${checkWorst}</div>
+        ${notaArquero}
+      </div>
+      <div style="margin-top:14px;">
+        <label>Notas (opcional)</label>
+        <textarea id="notas" placeholder="Algo para recordar del partido..."></textarea>
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn" onclick="guardarResultado()">Guardar resultado</button>
+      </div>
+      <div id="msgResultado"></div>
+    </div>
+  `;
+  toggleDiffWrap();
+}
+
+function sincronizarEvaluaciones(){
+  const best = new Set(Array.from(document.querySelectorAll('.chkBest:checked')).map(el=>el.value));
+  document.querySelectorAll('.chkWorst').forEach(el=>{
+    el.disabled = best.has(el.value);
+    if(el.disabled) el.checked = false;
+  });
+  const worst = new Set(Array.from(document.querySelectorAll('.chkWorst:checked')).map(el=>el.value));
+  document.querySelectorAll('.chkBest').forEach(el=>{
+    el.disabled = worst.has(el.value);
+    if(el.disabled) el.checked = false;
+  });
+}
+
+function seleccionarPartidoPendiente(id){
+  const m=obtenerPartidoPendiente(id);
+  if(!m) return;
+  sincronizarLastTeamsConPartido(m);
+  saveState();
+  renderResultado();
+}
+
+function toggleDiffWrap(){
+  const tipo = document.getElementById('resultadoTipo').value;
+  const wrap = document.getElementById('diffWrap');
+  wrap.style.display = tipo === 'empate' ? 'none' : 'block';
+}
+
+function guardarResultado(){
+  const match=state.lastTeams?.matchId ? obtenerPartidoPendiente(state.lastTeams.matchId) : null;
+  if(!match){ alert('Seleccioná un partido armado pendiente antes de cargar el resultado.'); return; }
+  const resultadoTipo = document.getElementById('resultadoTipo').value;
+  const diferencia = resultadoTipo === 'empate' ? 0 : (parseInt(document.getElementById('diffGoles').value) || 1);
+  const nivelPartido = document.getElementById('nivelPartido').value;
+  const bestIds = Array.from(document.querySelectorAll('.chkBest:checked')).map(el=>el.value);
+  const worstIds = Array.from(document.querySelectorAll('.chkWorst:checked')).map(el=>el.value);
+  const overlap = bestIds.filter(id=>worstIds.includes(id));
+  if(overlap.length){
+    alert('Un jugador no puede figurar a la vez entre los destacados y los que más costaron.');
+    return;
+  }
+  const notas = document.getElementById('notas').value.trim();
+
+  const teamA = [...(match.teamAIds||[])];
+  const teamB = [...(match.teamBIds||[])];
+  const arqueroIds = [match.arqueroAId, match.arqueroBId].filter(Boolean);
+  const partidoNumero = match.numero || (state.matches.indexOf(match)+1);
+
+  match.estado='jugado';
+  match.date=new Date().toISOString();
+  match.resultadoTipo=resultadoTipo;
+  match.diferencia=diferencia;
+  match.nivelPartido=nivelPartido;
+  match.best=bestIds.map(id=>state.players.find(p=>p.id===id)).filter(Boolean).map(nombreVisible);
+  match.worst=worstIds.map(id=>state.players.find(p=>p.id===id)).filter(Boolean).map(nombreVisible);
+  match.notas=notas;
+
+  [...teamA, ...teamB].forEach(id=>{
+    const p = state.players.find(x=>x.id===id);
+    if(p) p.matchesPlayed = (p.matchesPlayed||0) + 1;
+  });
+  bestIds.forEach(id=>{
+    const p = state.players.find(x=>x.id===id);
+    if(p) p.skill = Math.min(10, p.skill + 0.3);
+  });
+  worstIds.forEach(id=>{
+    if(arqueroIds.includes(id)) return;
+    const p = state.players.find(x=>x.id===id);
+    if(p) p.skill = Math.max(1, p.skill - 0.3);
+  });
+  const fechaPartido = new Date().toISOString();
+  [...teamA, ...teamB].forEach(id=>{
+    const p = state.players.find(x=>x.id===id);
+    if(p){
+      if(!p.skillHistory) p.skillHistory = [];
+      p.skillHistory.push({date: fechaPartido, skill:p.skill, label:`P${partidoNumero}`});
+    }
+  });
+
+  state.lastTeams = null;
+  saveState();
+  renderStats();
+  actualizarEstadoExcel(`Base actualizada · Partido ${partidoNumero} jugado`);
+  mostrarConfirmacionGuardado(partidoNumero);
+  document.getElementById('msgResultado').innerHTML = `
+    <div class="msg ok">✓ Resultado guardado. El Partido ${partidoNumero} ahora figura como jugado y pasó al historial.</div>
+    <div class="card" style="margin-top:10px;padding:14px;background:#EEF7F0;border:1px solid #C9E4CF;box-shadow:none;">
+      <strong>📦 Tu base ya está actualizada</strong>
+      <p class="desc" style="margin:5px 0 10px;">Descargá el Excel para guardar y compartir toda la historia hasta el Partido ${partidoNumero}.</p>
+      <button class="btn" onclick="exportarExcel()">📤 Descargar Excel — Partido ${partidoNumero}</button>
+    </div>`;
+  setTimeout(()=>switchTab('historial'), 900);
+}
+
+/* ---------- TAB: HISTORIAL ---------- */
+function resultadoHistorialTexto(m){
+  if(m.resultadoTipo === 'empate' || (m.resultadoTipo===undefined && m.scoreA===m.scoreB)) return 'Empate';
+  if(m.resultadoTipo==='local') return `Ganó local por ${m.diferencia||1}`;
+  if(m.resultadoTipo==='visitante') return `Ganó visitante por ${m.diferencia||1}`;
+  return 'Resultado cargado';
+}
+
+function historialPlayer(id, snapshot){
+  const p=state.players.find(x=>x.id===id);
+  if(!p) return null;
+  const copy={...p};
+  if(snapshot && snapshot[id]!==undefined) copy.skill=Number(snapshot[id]);
+  return copy;
+}
+
+function historialNombreDesdeTexto(txt){
+  return String(txt||'').replace(/\s*\([^)]*\)\s*$/,'').trim();
+}
+
+function toggleFormacionHistorial(idx){
+  const m=state.matches[idx];
+  const el=document.getElementById('formacionHist'+idx);
+  if(!el || !m) return;
+  if(el.style.display!=='none'){
+    el.style.display='none';
+    return;
+  }
+
+  let teamA=(m.teamAIds||[]).map(id=>historialPlayer(id,m.skillSnapshotA)).filter(Boolean);
+  let teamB=(m.teamBIds||[]).map(id=>historialPlayer(id,m.skillSnapshotB)).filter(Boolean);
+
+  // Compatibilidad con bases antiguas sin IDs de jugadores.
+  if(!teamA.length && m.teamA?.length){
+    teamA=m.teamA.map(txt=>state.players.find(p=>nombreVisible(p)===txt || p.name===historialNombreDesdeTexto(txt))).filter(Boolean);
+  }
+  if(!teamB.length && m.teamB?.length){
+    teamB=m.teamB.map(txt=>state.players.find(p=>nombreVisible(p)===txt || p.name===historialNombreDesdeTexto(txt))).filter(Boolean);
+  }
+
+  const best=new Set((m.best||[]).map(historialNombreDesdeTexto));
+  const worst=new Set((m.worst||[]).map(historialNombreDesdeTexto));
+  const skillA=teamA.reduce((s,p)=>s+habilidadCompetitiva(p),0);
+  const skillB=teamB.reduce((s,p)=>s+habilidadCompetitiva(p),0);
+  const global=fuerzaGlobal(teamA,teamB);
+
+  const fila=(p)=>{
+    const n=nombreVisible(p);
+    const key=p.name;
+    let mark='';
+    if(best.has(key)) mark+='<span class="historial-arrow-up" title="Destacó">↑</span>';
+    if(worst.has(key)) mark+='<span class="historial-arrow-down" title="Costó">↓</span>';
+    return `<li class="team-player"><span>${n}${p.esArquero?' 🧤':''}${mark}</span><span>${estrellas(p.skill)}</span></li>`;
+  };
+
+  el.innerHTML=`
+    <div class="historial-formation">
+      <div class="historial-result">
+        <span class="red">🔴 Local</span>
+        <strong>${resultadoHistorialTexto(m)}</strong>
+        <span class="white">⚪ Visitante</span>
+      </div>
+      <div class="global-balance">
+        <strong>Fuerza competitiva global: ${numeroARating(global)} / 10</strong>
+        <span>Diferencia entre equipos: ${numeroARating(Math.abs(skillA/(teamA.length||1)-skillB/(teamB.length||1)))} puntos</span>
+      </div>
+      <div class="teams-wrap">
+        <div class="team-col A">
+          <h3>Equipo local</h3>
+          <ul>${teamA.map(fila).join('')}</ul>
+          <div class="total">Fuerza competitiva: <b>${numeroARating(skillA/(teamA.length||1))} / 10</b></div>
+        </div>
+        <div class="team-col B">
+          <h3>Equipo visitante</h3>
+          <ul>${teamB.map(fila).join('')}</ul>
+          <div class="total">Fuerza competitiva: <b>${numeroARating(skillB/(teamB.length||1))} / 10</b></div>
+        </div>
+      </div>
+      <p class="desc" style="margin-top:10px;">↑ Destacó · ↓ Le costó</p>
+    </div>`;
+  el.style.display='block';
+}
+
+function renderHistorial(){
+  const pendientes=partidosPendientes();
+  const jugados=state.matches.filter(m=>m.estado!=='armado');
+  const nivelTexto = {parejo:'🟢 Muy parejo', peleado:'🟠 Peleado', desnivelado:'🔴 Desnivelado'};
+  const pendingHtml=pendientes.length ? `
+    <div class="card" style="margin-bottom:14px;">
+      <h2>📌 Partidos armados pendientes (${pendientes.length})</h2>
+      <p class="desc">Estos partidos ya fueron armados y guardados, pero todavía no se cargó su resultado.</p>
+      ${pendientes.map((m,i)=>`
+        <div class="match-item">
+          <div class="top"><span class="date">Partido ${m.numero||state.matches.indexOf(m)+1} · ${new Date(m.fechaArmado||m.date).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'})}</span><span class="score">PENDIENTE</span></div>
+          <div class="teams">Local: ${(m.teamA||[]).join(', ')}</div>
+          <div class="teams">Visitante: ${(m.teamB||[]).join(', ')}</div>
+          <button class="btn secondary small" style="margin-top:8px;" onclick="seleccionarPartidoPendiente('${m.id}');switchTab('resultado')">Cargar resultado →</button>
+        </div>`).join('')}
+    </div>` : '';
+  const items = jugados.map(m=>{
+    const idx=state.matches.indexOf(m);
+    const resultadoTxt=resultadoHistorialTexto(m);
+    return `
+    <div class="match-item">
+      <div class="top"><span class="date">Partido ${m.numero||idx+1} · ${new Date(m.date).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'})}</span><span class="score">${resultadoTxt}</span></div>
+      <div class="teams">Local: ${(m.teamA||[]).join(', ')}${m.arqueroANombre?` (🧤 ${m.arqueroANombre})`:''}</div>
+      <div class="teams">Visitante: ${(m.teamB||[]).join(', ')}${m.arqueroBNombre?` (🧤 ${m.arqueroBNombre})`:''}</div>
+      ${m.nivelPartido ? `<div class="teams">${nivelTexto[m.nivelPartido]||''}</div>` : ''}
+      ${m.best?.length ? `<div class="teams"><span class="historial-arrow-up">↑</span> Destacaron: ${m.best.join(', ')}</div>` : ''}
+      ${m.worst?.length ? `<div class="teams"><span class="historial-arrow-down">↓</span> Más costaron: ${m.worst.join(', ')}</div>` : ''}
+      ${m.notas ? `<div class="teams">📝 ${m.notas}</div>` : ''}
+      <button class="btn secondary small" style="margin-top:8px;" onclick="toggleFormacionHistorial(${idx})">VER formación</button>
+      <div id="formacionHist${idx}" style="display:none;"></div>
+    </div>`;
+  }).join('');
+  document.getElementById('content').innerHTML = `
+    ${pendingHtml}
+    <div class="card">
+      <h2>Historial de partidos (${jugados.length})</h2>
+      ${jugados.length ? items : '<div class="empty">Todavía no hay partidos jugados. Los partidos armados aparecen arriba como pendientes.</div>'}
+    </div>`;
+}
+
+/* ---------- NAV ---------- */
+const renderers = { plantel: renderPlantel, reglas: renderReglas, armar: renderArmar, resultado: renderResultado, historial: renderHistorial };
+
+function switchTab(tab){
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  if(!loaded){ mostrarImportacionInicial(); return; }
+  renderers[tab]();
+}
+
+document.getElementById('tabs').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-tab]');
+  if(btn) switchTab(btn.dataset.tab);
+});
+
+(async function init(){
+  document.getElementById('content').innerHTML = `<div class="card"><div class="empty">Cargando datos...</div></div>`;
+  await loadState();
+  renderStats();
+  mostrarImportacionInicial();
+})();
+</script>
+</body>
+</html>
