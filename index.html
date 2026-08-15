@@ -145,7 +145,44 @@
   .del-icon{background:none;border:none;color:var(--rojo);font-size:17px;cursor:pointer;padding:2px 6px;}
   .gk-badge-toggle{border:1px solid #CFC8B2;background:#fff;border-radius:999px;padding:1px 8px;font-size:12px;cursor:pointer;margin-left:6px;}
   .gk-badge-toggle.on{background:#5B2E8C;color:#fff;border-color:#5B2E8C;}
-  .edit-link{background:none;border:none;color:var(--tinta-suave);text-decoration:underline;font-size:12.5px;cursor:pointer;padding:0;}
+  .edit-link{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:4px 0 18px;
+  padding:10px 15px;
+  border:1px solid rgba(214,164,63,.45);
+  border-radius:10px;
+  background:linear-gradient(145deg,#181A16,#10120F);
+  color:#E8C76A;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.04em;
+  cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,0,0,.22);
+  transition:transform .15s, border-color .15s, background .15s, box-shadow .15s;
+}
+.edit-link::before{
+  content:'✎';
+  font-size:16px;
+  line-height:1;
+  color:#D6A43F;
+}
+.edit-link:hover{
+  transform:translateY(-1px);
+  border-color:#D6A43F;
+  background:linear-gradient(145deg,#22231D,#151711);
+  box-shadow:0 7px 18px rgba(0,0,0,.32);
+}
+.edit-link:active{transform:translateY(0);}
+.edit-link[aria-pressed="true"]{
+  background:#D6A43F;
+  border-color:#D6A43F;
+  color:#101310;
+}
+.edit-link[aria-pressed="true"]::before{color:#101310;}
+
   .select-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
 
   .check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px;}
@@ -1119,6 +1156,251 @@ label{color:#D9D7D0}
   }
 }
 </style>
+
+<style id="player-edit-modal-v19">
+.player-edit-overlay{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(0,0,0,.78);
+  backdrop-filter:blur(5px);
+}
+.player-edit-modal{
+  width:min(720px,100%);
+  max-height:min(90vh,820px);
+  overflow:auto;
+  background:#101310;
+  color:#F2EFE6;
+  border:1px solid rgba(214,164,63,.38);
+  border-radius:18px;
+  box-shadow:0 24px 70px rgba(0,0,0,.65);
+}
+.player-edit-head{
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  padding:24px 26px 18px;
+  border-bottom:1px solid rgba(214,164,63,.15);
+}
+.player-edit-kicker{
+  color:#D6A43F;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.15em;
+  margin-bottom:4px;
+}
+.player-edit-head h2{
+  margin:0 0 5px;
+  color:#F3EFE5;
+}
+.player-edit-head p{
+  margin:0;
+  color:#A8ADA5;
+  font-size:14px;
+}
+.player-edit-close{
+  flex:0 0 auto;
+  width:38px;
+  height:38px;
+  border-radius:10px;
+  border:1px solid rgba(214,164,63,.28);
+  background:#171A17;
+  color:#E8C76A;
+  cursor:pointer;
+}
+.player-edit-preview{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin:20px 26px 0;
+  padding:13px 15px;
+  border:1px solid rgba(214,164,63,.16);
+  border-radius:12px;
+  background:#151815;
+}
+.player-edit-preview strong{
+  display:block;
+  font-size:18px;
+}
+.player-edit-preview span{
+  display:block;
+  color:#858C84;
+  font-size:12px;
+  margin-top:2px;
+}
+.edit-avatar-preview{
+  width:52px!important;
+  height:52px!important;
+  min-width:52px!important;
+}
+.player-edit-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
+  padding:20px 26px;
+}
+.edit-field{
+  min-width:0;
+}
+.edit-field-wide{
+  grid-column:span 1;
+}
+.edit-field label{
+  display:block;
+  margin-bottom:6px;
+  color:#D8D5CA;
+  font-size:12px;
+  font-weight:800;
+}
+.edit-field label small{
+  color:#858C84;
+  font-weight:500;
+}
+.edit-field input,
+.edit-field select{
+  width:100%;
+  box-sizing:border-box;
+  min-height:46px;
+  border:1px solid rgba(214,164,63,.28);
+  border-radius:10px;
+  padding:10px 12px;
+  background:#0A0D0B;
+  color:#F2EFE6;
+  font:inherit;
+}
+.edit-field input:focus,
+.edit-field select:focus{
+  outline:2px solid rgba(214,164,63,.65);
+  outline-offset:1px;
+}
+.edit-field>small{
+  display:block;
+  margin-top:5px;
+  color:#7F877F;
+  font-size:11px;
+  line-height:1.35;
+}
+.player-edit-footer{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  padding:16px 26px 22px;
+  border-top:1px solid rgba(214,164,63,.15);
+}
+.player-edit-footer .btn{
+  min-width:150px;
+}
+@media(max-width:700px){
+  .player-edit-overlay{
+    align-items:flex-end;
+    padding:0;
+  }
+  .player-edit-modal{
+    width:100%;
+    max-height:94vh;
+    border-radius:20px 20px 0 0;
+    border-bottom:0;
+  }
+  .player-edit-head{
+    padding:18px 18px 14px;
+  }
+  .player-edit-head h2{
+    font-size:24px;
+  }
+  .player-edit-preview{
+    margin:14px 18px 0;
+  }
+  .player-edit-grid{
+    grid-template-columns:1fr;
+    gap:12px;
+    padding:16px 18px 18px;
+  }
+  .edit-field-wide{
+    grid-column:auto;
+  }
+  .player-edit-footer{
+    position:sticky;
+    bottom:0;
+    background:#101310;
+    padding:12px 18px calc(12px + env(safe-area-inset-bottom));
+  }
+  .player-edit-footer .btn{
+    flex:1;
+    min-width:0;
+  }
+}
+</style>
+
+<style id="edit-plantel-premium-v20">
+@media(max-width:700px){
+  .edit-link{
+    width:100%;
+    justify-content:center;
+    min-height:44px;
+    margin:4px 0 16px;
+    font-size:12px;
+  }
+}
+</style>
+
+<style id="team-summary-field-v21">
+.team-summary{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.team-summary .summary-label{
+  color:inherit;
+  font-weight:800;
+}
+.team-summary small{
+  display:block;
+  max-width:95%;
+  font-size:10.5px;
+  line-height:1.3;
+  font-weight:500;
+  opacity:.62;
+}
+.team-summary .team-raw-skill{
+  margin-top:5px;
+}
+.field-caption{
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:18px auto 0;
+  color:#D6D7D0;
+  text-align:center;
+}
+.field-caption strong{
+  color:#E8C96A;
+  font-size:14px;
+}
+.field-caption span{
+  color:#858C84;
+  font-size:11px;
+}
+@media(max-width:700px){
+  .team-summary small{
+    max-width:100%;
+    font-size:10px;
+  }
+  .field-caption{
+    display:block;
+    padding:0 8px;
+  }
+  .field-caption strong,.field-caption span{
+    display:block;
+  }
+  .field-caption span{margin-top:3px;}
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -1748,7 +2030,7 @@ function renderPlantel(){
     <div class="card">
       <h2>Plantel (${state.players.filter(p=>p.active!==false).length})</h2>
       <p class="desc">Ordenado por rendimiento: primero más victorias, luego menos derrotas, más veces destacado, menos veces que le costó y, en último lugar, habilidad actual para desempatar.</p>
-      <button class="edit-link" onclick="togglePlantelEdit()">${plantelEditMode ? 'Ocultar edición' : 'Editar plantel (modificar / quitar / marcar arquero)'}</button>
+      <button class="edit-link" aria-pressed="${plantelEditMode?'true':'false'}" onclick="togglePlantelEdit()">${plantelEditMode ? 'Terminar edición' : 'Editar plantel'}</button>
       ${state.players.some(p=>p.active!==false) ? `
       <div class="table-scroll">
       <table class="plantel-stats-table" style="margin-top:10px;">
@@ -1891,46 +2173,176 @@ function cambiarAvatarJugador(id){
   alert('Elegí una opción válida.');
 }
 
-function editarPlayer(id){
-  const p = state.players.find(x=>x.id===id);
+
+function escapeHtml(value){
+  return String(value??'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+function cerrarEditorJugador(){
+  const el=document.getElementById('player-edit-modal');
+  if(el) el.remove();
+}
+
+function actualizarEditorAvatar(){
+  const sel=document.getElementById('editAvatarTipo');
+  const preview=document.getElementById('editAvatarPreview');
+  if(!sel || !preview) return;
+  preview.outerHTML=avatarHTML(
+    {avatarTipo:sel.value,avatarValor:''},
+    'player-avatar edit-avatar-preview'
+  );
+}
+
+function guardarEdicionJugador(id){
+  const p=state.players.find(x=>x.id===id);
   if(!p) return;
-  const name = prompt('Nombre', p.name);
-  if(name===null) return;
-  const nombreNuevo=name.trim();
-  if(!nombreNuevo){ alert('El nombre no puede quedar vacío.'); return; }
-  const apodo = prompt('Apodo (opcional)', p.apodo||'');
-  if(apodo===null) return;
-  const apodoNuevo=apodo.trim();
-  const genderInput=prompt('Género: escribí M para varón o F para mujer', p.gender);
-  if(genderInput===null) return;
-  const genderNuevo=genderInput.trim().toUpperCase();
-  if(!['M','F'].includes(genderNuevo)){ alert('El género debe ser M o F.'); return; }
-  const skillInput=prompt('Puntaje actual (1 a 10)', String(p.skill));
-  if(skillInput===null) return;
-  const skillNuevo=parseFloat(String(skillInput).replace(',','.'));
-  if(!Number.isFinite(skillNuevo) || skillNuevo<1 || skillNuevo>10){ alert('El puntaje debe estar entre 1 y 10.'); return; }
-  const arqueroInput=prompt('¿Arquero? escribí SI o NO', p.esArquero?'SI':'NO');
-  if(arqueroInput===null) return;
-  const arqueroNuevo=arqueroInput.trim().toUpperCase();
-  if(!['SI','NO'].includes(arqueroNuevo)){ alert('Escribí SI o NO.'); return; }
 
-  const duplicado=state.players.some(x=>x.id!==id && x.active!==false && x.name.toLowerCase()===nombreNuevo.toLowerCase() && (x.apodo||'').toLowerCase()===apodoNuevo.toLowerCase());
-  if(duplicado){ alert('Ya existe otro jugador con ese nombre y ese apodo.'); return; }
+  const name=document.getElementById('editName')?.value.trim() || '';
+  const apodo=document.getElementById('editApodo')?.value.trim() || '';
+  const gender=document.getElementById('editGender')?.value || p.gender;
+  const skill=parseFloat(String(document.getElementById('editSkill')?.value||'').replace(',','.'));
+  const esArquero=document.getElementById('editArquero')?.value==='si';
+  const habilidadEspecial=document.getElementById('editEspecial')?.value || '';
+  const avatarTipo=document.getElementById('editAvatarTipo')?.value || 'sinclub';
 
-  const teniaPartidos=(p.matchesPlayed||0)>0 || state.matches.some(m=>(m.teamAIds||[]).includes(id)||(m.teamBIds||[]).includes(id));
-  p.name=nombreNuevo;
-  p.apodo=apodoNuevo;
-  p.gender=genderNuevo;
-  p.esArquero=arqueroNuevo==='SI';
-  p.skill=Math.min(10,Math.max(1,skillNuevo));
-  // Si todavía no jugó, corregimos también el punto inicial del historial.
-  // Si ya jugó, conservamos la evolución histórica y aplicamos el cambio al rating actual.
-  if(!teniaPartidos){
-    if(!p.skillHistory || !p.skillHistory.length) p.skillHistory=[{date:new Date().toISOString(),skill:p.skill,label:'Inicial'}];
-    else p.skillHistory[0].skill=p.skill;
+  if(!name){ alert('El nombre no puede quedar vacío.'); return; }
+  if(!Number.isFinite(skill) || skill<1 || skill>10){
+    alert('El puntaje debe estar entre 1 y 10.'); return;
   }
+
+  const duplicado=state.players.some(x=>
+    x.id!==id && x.active!==false &&
+    x.name.toLowerCase()===name.toLowerCase() &&
+    (x.apodo||'').toLowerCase()===apodo.toLowerCase()
+  );
+  if(duplicado){
+    alert('Ya existe otro jugador con ese nombre y ese apodo. Si es otra persona, usá un apodo diferente.');
+    return;
+  }
+
+  const teniaPartidos=(p.matchesPlayed||0)>0 ||
+    state.matches.some(m=>(m.teamAIds||[]).includes(id)||(m.teamBIds||[]).includes(id));
+
+  p.name=name;
+  p.apodo=apodo;
+  p.gender=gender;
+  p.esArquero=esArquero;
+  p.habilidadEspecial=habilidadEspecial;
+  p.avatarTipo=avatarTipo;
+  p.avatarValor='';
+  p.skill=Math.min(10,Math.max(1,skill));
+
+  // Si nunca jugó, el cambio también corrige su punto inicial.
+  // Si ya tiene historial, no modificamos los puntos históricos.
+  if(!teniaPartidos){
+    if(!p.skillHistory || !p.skillHistory.length){
+      p.skillHistory=[{date:new Date().toISOString(),skill:p.skill,label:'Inicial'}];
+    }else{
+      p.skillHistory[0].skill=p.skill;
+    }
+  }
+
   saveState();
-  renderPlantel(); renderStats();
+  cerrarEditorJugador();
+  renderPlantel();
+  renderStats();
+}
+
+function editarPlayer(id){
+  const p=state.players.find(x=>x.id===id);
+  if(!p) return;
+
+  const optionsAvatar=AVATARES_PREDEFINIDOS.map(a=>
+    `<option value="${a.value}" ${a.value===(p.avatarTipo||'sinclub')?'selected':''}>${a.emoji} — ${a.label}</option>`
+  ).join('');
+
+  const optionsEspecial=HABILIDADES_ESPECIALES.map(e=>
+    `<option value="${e.value}" ${e.value===(p.habilidadEspecial||'')?'selected':''}>${e.label}</option>`
+  ).join('');
+
+  const overlay=document.createElement('div');
+  overlay.id='player-edit-modal';
+  overlay.className='player-edit-overlay';
+  overlay.innerHTML=`
+    <div class="player-edit-modal" role="dialog" aria-modal="true" aria-labelledby="player-edit-title">
+      <div class="player-edit-head">
+        <div>
+          <div class="player-edit-kicker">PLANTEL</div>
+          <h2 id="player-edit-title">Modificar jugador/a</h2>
+          <p>Editá solo lo que necesitás y guardá los cambios.</p>
+        </div>
+        <button type="button" class="player-edit-close" onclick="cerrarEditorJugador()" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="player-edit-preview">
+        <div id="editAvatarPreviewWrap">
+          ${avatarHTML(p,'player-avatar edit-avatar-preview')}
+        </div>
+        <div>
+          <strong>${nombreVisible(p)}</strong>
+          <span>Vista previa del jugador</span>
+        </div>
+      </div>
+
+      <div class="player-edit-grid">
+        <div class="edit-field edit-field-wide">
+          <label for="editName">Nombre</label>
+          <input id="editName" type="text" value="${escapeHtml(p.name||'')}">
+        </div>
+
+        <div class="edit-field edit-field-wide">
+          <label for="editApodo">Apodo <small>opcional</small></label>
+          <input id="editApodo" type="text" value="${escapeHtml(p.apodo||'')}">
+        </div>
+
+        <div class="edit-field">
+          <label for="editGender">Género</label>
+          <select id="editGender">
+            <option value="F" ${p.gender==='F'?'selected':''}>Mujer</option>
+            <option value="M" ${p.gender==='M'?'selected':''}>Varón</option>
+          </select>
+        </div>
+
+        <div class="edit-field">
+          <label for="editSkill">Puntaje (1–10)</label>
+          <input id="editSkill" type="number" min="1" max="10" step="0.5" value="${Number(p.skill||1)}">
+        </div>
+
+        <div class="edit-field">
+          <label for="editArquero">¿Arquero?</label>
+          <select id="editArquero">
+            <option value="no" ${!p.esArquero?'selected':''}>No</option>
+            <option value="si" ${p.esArquero?'selected':''}>Sí</option>
+          </select>
+        </div>
+
+        <div class="edit-field edit-field-wide">
+          <label for="editEspecial">Habilidad especial</label>
+          <select id="editEspecial">${optionsEspecial}</select>
+          <small>Complementa la habilidad general y tiene un peso menor en el armado.</small>
+        </div>
+
+        <div class="edit-field edit-avatar-field">
+          <label for="editAvatarTipo">Avatar / club</label>
+          <select id="editAvatarTipo" onchange="actualizarEditorAvatar()">${optionsAvatar}</select>
+          <small>Elegí los colores del club argentino que identifica al jugador.</small>
+        </div>
+      </div>
+
+      <div class="player-edit-footer">
+        <button type="button" class="btn secondary" onclick="cerrarEditorJugador()">Cancelar</button>
+        <button type="button" class="btn" onclick="guardarEdicionJugador('${id}')">✓ Guardar cambios</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',e=>{
+    if(e.target===overlay) cerrarEditorJugador();
+  });
 }
 
 function deletePlayer(id){
@@ -2242,17 +2654,21 @@ function renderEditorEquipos(){
         <div class="team-col A">
           <h3>Equipo local</h3>
           <ul ondragover="event.preventDefault()">${listA}</ul>
-          <div class="total">
-            Fuerza competitiva: <b>${numeroARatingPreciso(forceA)} / 10</b>
-            <span class="team-raw-skill">Habilidad promedio: ${numeroARatingPreciso(rawA)} / 10</span>
+          <div class="total team-summary">
+            <div><span class="summary-label">Fuerza competitiva</span> <b>${numeroARatingPreciso(forceA)} / 10</b></div>
+            <small>Valor que usa el armado para equilibrar el equipo, considerando la equivalencia competitiva y el perfil de juego.</small>
+            <div class="team-raw-skill"><span class="summary-label">Habilidad promedio</span> ${numeroARatingPreciso(rawA)} / 10</div>
+            <small>Promedio del puntaje general de los 5 jugadores, sin ajustes.</small>
           </div>
         </div>
         <div class="team-col B">
           <h3>Equipo visitante</h3>
           <ul ondragover="event.preventDefault()">${listB}</ul>
-          <div class="total">
-            Fuerza competitiva: <b>${numeroARatingPreciso(forceB)} / 10</b>
-            <span class="team-raw-skill">Habilidad promedio: ${numeroARatingPreciso(rawB)} / 10</span>
+          <div class="total team-summary">
+            <div><span class="summary-label">Fuerza competitiva</span> <b>${numeroARatingPreciso(forceB)} / 10</b></div>
+            <small>Valor que usa el armado para equilibrar el equipo, considerando la equivalencia competitiva y el perfil de juego.</small>
+            <div class="team-raw-skill"><span class="summary-label">Habilidad promedio</span> ${numeroARatingPreciso(rawB)} / 10</div>
+            <small>Promedio del puntaje general de los 5 jugadores, sin ajustes.</small>
           </div>
         </div>
       </div>
@@ -2339,11 +2755,19 @@ function posicionesFormacion(cantidad, lado){
   if(cantidad <= 0) return [];
   const x = lado==='A' ? {fondo:85, medio:175, ataque:265} : {fondo:515, medio:425, ataque:335};
   const cy = 170;
-  if(cantidad===1) return [{x:x.medio,y:cy}];
-  if(cantidad===2) return [{x:x.fondo,y:cy-45},{x:x.ataque,y:cy+45}];
-  if(cantidad===3) return [{x:x.fondo,y:cy},{x:x.medio,y:cy-60},{x:x.ataque,y:cy+60}];
-  if(cantidad===4) return [{x:x.fondo,y:cy-65},{x:x.fondo,y:cy+65},{x:x.ataque,y:cy-65},{x:x.ataque,y:cy+65}];
-  return [{x:x.fondo,y:cy-80},{x:x.fondo,y:cy+80},{x:x.medio,y:cy},{x:x.ataque,y:cy-80},{x:x.ataque,y:cy+80}];
+  if(cantidad===1) return [{x:x.fondo,y:cy}];
+  if(cantidad===2) return [{x:x.fondo,y:cy},{x:x.ataque,y:cy}];
+  if(cantidad===3) return [{x:x.fondo,y:cy},{x:x.medio,y:cy-55},{x:x.ataque,y:cy+55}];
+  if(cantidad===4) return [{x:x.fondo,y:cy},{x:x.medio,y:cy-65},{x:x.ataque,y:cy-65},{x:x.ataque,y:cy+65}];
+  // En 5 vs 5: un jugador ocupa el arco y los otros cuatro quedan
+  // distribuidos en dos líneas de juego.
+  return [
+    {x:x.fondo,y:cy},
+    {x:x.medio,y:cy-65},
+    {x:x.medio,y:cy+65},
+    {x:x.ataque,y:cy-70},
+    {x:x.ataque,y:cy+70}
+  ];
 }
 
 function esArqueroDeHoy(p, arqueroRef){
@@ -2354,27 +2778,49 @@ function esArqueroDeHoy(p, arqueroRef){
 function dibujarCancha(teamA, teamB, arqueroA, arqueroB){
   const posA = posicionesFormacion(teamA.length,'A');
   const posB = posicionesFormacion(teamB.length,'B');
-  const dotsA = teamA.map((p,i)=>{
+
+  // Para 5 jugadores, el arquero va siempre en la posición del arco.
+  // Si no se eligió arquero, usamos al primero disponible como arquero visual.
+  function ordenarParaCancha(team, arqueroRef){
+    if(!team.length) return [];
+    const elegido = team.find(p=>esArqueroDeHoy(p,arqueroRef)) || team[0];
+    return [elegido, ...team.filter(p=>p.id!==elegido.id)];
+  }
+
+  const canchaA = ordenarParaCancha(teamA, arqueroA);
+  const canchaB = ordenarParaCancha(teamB, arqueroB);
+
+  const dotsA = canchaA.map((p,i)=>{
     const pos = posA[i];
-    const esGK = esArqueroDeHoy(p, arqueroA);
+    const esGK = i===0;
     return `
-    <circle cx="${pos.x}" cy="${pos.y}" r="17" fill="#C1272D" stroke="${esGK?'#5B2E8C':'#fff'}" stroke-width="${esGK?4:2.5}"/>
-    <text x="${pos.x}" y="${pos.y+32}" font-size="12" text-anchor="middle" fill="#fff" font-family="Work Sans" font-weight="600">${p.name.split(' ')[0]}${esGK?' 🧤':''}</text>`;
+    <circle cx="${pos.x}" cy="${pos.y}" r="${esGK?19:17}" fill="#C1272D" stroke="${esGK?'#D6A43F':'#fff'}" stroke-width="${esGK?4:2.5}"/>
+    ${esGK ? `<text x="${pos.x}" y="${pos.y-27}" font-size="13" text-anchor="middle" fill="#E8C96A" font-family="Work Sans" font-weight="800">🧤</text>` : ''}
+    <text x="${pos.x}" y="${pos.y+32}" font-size="12" text-anchor="middle" fill="#fff" font-family="Work Sans" font-weight="600">${p.name.split(' ')[0]}</text>`;
   }).join('');
-  const dotsB = teamB.map((p,i)=>{
+
+  const dotsB = canchaB.map((p,i)=>{
     const pos = posB[i];
-    const esGK = esArqueroDeHoy(p, arqueroB);
+    const esGK = i===0;
     return `
-    <circle cx="${pos.x}" cy="${pos.y}" r="17" fill="#FFFFFF" stroke="${esGK?'#5B2E8C':'#C1272D'}" stroke-width="${esGK?4:2.5}"/>
-    <text x="${pos.x}" y="${pos.y+32}" font-size="12" text-anchor="middle" fill="#fff" font-family="Work Sans" font-weight="600">${p.name.split(' ')[0]}${esGK?' 🧤':''}</text>`;
+    <circle cx="${pos.x}" cy="${pos.y}" r="${esGK?19:17}" fill="#FFFFFF" stroke="${esGK?'#D6A43F':'#C1272D'}" stroke-width="${esGK?4:2.5}"/>
+    ${esGK ? `<text x="${pos.x}" y="${pos.y-27}" font-size="13" text-anchor="middle" fill="#E8C96A" font-family="Work Sans" font-weight="800">🧤</text>` : ''}
+    <text x="${pos.x}" y="${pos.y+32}" font-size="12" text-anchor="middle" fill="#fff" font-family="Work Sans" font-weight="600">${p.name.split(' ')[0]}</text>`;
   }).join('');
+
   return `
-  <svg class="field-svg" viewBox="0 0 600 340" width="100%" height="280">
+  <div class="field-caption">
+    <strong>⚽ Vista en cancha</strong>
+    <span>El 🧤 ocupa el arco. Si no elegiste arquero, se asigna automáticamente uno para visualizar la formación.</span>
+  </div>
+  <svg class="field-svg" viewBox="0 0 600 340" width="100%" height="280" aria-label="Formación de los dos equipos en cancha">
     <rect x="4" y="4" width="592" height="332" rx="10" fill="#1F6B3F" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
     <line x1="300" y1="4" x2="300" y2="336" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
     <circle cx="300" cy="170" r="45" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
     <rect x="4" y="90" width="70" height="160" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
     <rect x="526" y="90" width="70" height="160" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+    <rect x="0" y="135" width="16" height="70" fill="none" stroke="#fff" stroke-width="2"/>
+    <rect x="584" y="135" width="16" height="70" fill="none" stroke="#fff" stroke-width="2"/>
     ${dotsA}${dotsB}
   </svg>`;
 }
