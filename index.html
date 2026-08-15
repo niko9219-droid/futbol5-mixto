@@ -1457,6 +1457,20 @@ label{color:#D9D7D0}
   }
 }
 </style>
+<style id="plantel-file-hint-v23">
+.plantel-file-hint{
+  display:flex;
+  align-items:center;
+  color:#9CA39B;
+  font-size:11px;
+  line-height:1.3;
+  flex:1 1 220px;
+  min-width:180px;
+}
+@media(max-width:700px){
+  .plantel-file-hint{grid-column:1/-1;min-width:0;padding:2px 2px 0;}
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -1914,15 +1928,32 @@ function importarPlantelExcel(event){
   reader.onload=function(e){
     try{
       const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+
+      // El botón "Cargar plantel" acepta tanto:
+      // 1) un Excel de plantel puro descargado con "Descargar plantel"
+      // 2) un Excel integral/base histórica (por ejemplo futbol5_base_partido_9...)
+      // En ambos casos SOLO se toman los datos maestros de la hoja Jugadores.
       const ws=wb.Sheets['Jugadores'] || wb.Sheets[wb.SheetNames[0]];
       if(!ws) throw new Error('No encontré una hoja de jugadores.');
 
       const rows=rowsToObjects(ws);
-      if(!rows.length) throw new Error('El archivo de plantel está vacío.');
+      if(!rows.length) throw new Error('El archivo no contiene jugadores.');
 
-      if(state.players.length && !confirm(
-        'Vas a cargar un plantel. Se actualizarán los datos maestros de los jugadores incluidos en el archivo. Los partidos e historial existentes no se exportan ni se importan con este archivo. ¿Continuar?'
-      )) return;
+      const tieneDatosMaestros = rows.some(r =>
+        r.Nombre!==undefined || r.Apodo!==undefined || r.Habilidad!==undefined ||
+        r.AvatarTipo!==undefined || r.HabilidadEspecial!==undefined
+      );
+      if(!tieneDatosMaestros){
+        throw new Error('El archivo no tiene el formato esperado de plantel. Usá un Excel de plantel o un Excel integral que tenga la hoja "Jugadores".');
+      }
+
+      const esIntegral = wb.SheetNames.some(s => ['Partidos','HistorialRating','Reglas'].includes(s));
+      const mensaje = esIntegral
+        ? 'Este archivo es una BASE INTEGRAL. Voy a importar solamente el plantel (nombre, apodo, género, habilidad, arquero, especialidad y avatar). NO se van a importar partidos, resultados, estadísticas ni historial. ¿Continuar?'
+        : 'Voy a importar solamente los datos del plantel. No se importan partidos, resultados, estadísticas ni historial. ¿Continuar?';
+
+      if(state.players.length && !confirm(mensaje)) return;
+      if(!state.players.length && !confirm(mensaje)) return;
 
       const actuales=new Map(state.players.map(p=>[String(p.id),p]));
       const nuevos=[];
@@ -1932,49 +1963,77 @@ function importarPlantelExcel(event){
         const id=String(r.ID||('p_'+uid()));
         idsArchivo.add(id);
         const anterior=actuales.get(id);
-        const habilidad=Number(r.Habilidad||6);
-        const avatarTipo=AVATARES_PREDEFINIDOS.some(a=>a.value===String(r.AvatarTipo||''))
-          ? String(r.AvatarTipo)
-          : 'sinclub';
-        const especialVal=HABILIDADES_ESPECIALES.some(e=>e.value===String(r.HabilidadEspecial||''))
-          ? String(r.HabilidadEspecial)
-          : '';
+
+        let habilidad=Number(String(r.Habilidad??'').replace(',','.'));
+        if(!Number.isFinite(habilidad)) habilidad=6;
+        habilidad=Math.max(1,Math.min(10,habilidad));
+
+        const avatarRaw=String(r.AvatarTipo||'').trim();
+        const avatarTipo=AVATARES_PREDEFINIDOS.some(a=>a.value===avatarRaw)
+          ? avatarRaw
+          : (anterior?.avatarTipo && AVATARES_PREDEFINIDOS.some(a=>a.value===anterior.avatarTipo) ? anterior.avatarTipo : 'sinclub');
+
+        let especialVal=String(r.HabilidadEspecial||'').trim();
+        if(!HABILIDADES_ESPECIALES.some(e=>e.value===especialVal)){
+          const especialPorLabel=HABILIDADES_ESPECIALES.find(e=>e.label.toLowerCase()===String(r.Especialidad||'').trim().toLowerCase());
+          especialVal=especialPorLabel ? especialPorLabel.value : (anterior?.habilidadEspecial||'');
+        }
+
+        const nombre=String(r.Nombre??anterior?.name??`Jugador ${i+1}`).trim() || `Jugador ${i+1}`;
+        const apodo=String(r.Apodo??'').trim();
+        const generoRaw=String(r.Genero??anterior?.gender??'M').trim().toUpperCase();
 
         const jugador={
           id,
-          name:String(r.Nombre||anterior?.name||`Jugador ${i+1}`),
-          apodo:String(r.Apodo||''),
-          gender:String(r.Genero||anterior?.gender||'M').toUpperCase()==='F'?'F':'M',
-          skill:Math.max(1,Math.min(10,Number.isFinite(habilidad)?habilidad:6)),
+          name:nombre,
+          apodo,
+          gender:generoRaw==='F'?'F':'M',
+          skill:habilidad,
+          // Estas propiedades NO se leen del Excel, se conservan solo si el jugador
+          // ya existía en esta base. Así el archivo de plantel nunca pisa estadísticas.
           matchesPlayed:anterior?.matchesPlayed||0,
           avatarTipo,
           avatarValor:'',
           active:true,
-          esArquero:String(r.Arquero||'No').toLowerCase()==='si',
+          esArquero:String(r.Arquero??'No').trim().toLowerCase()==='si',
           habilidadEspecial:especialVal,
-          skillHistory:anterior?.skillHistory?.length ? anterior.skillHistory : [{date:new Date().toISOString(),skill:habilidad,label:'Inicial'}]
+          skillHistory:anterior?.skillHistory?.length
+            ? anterior.skillHistory
+            : [{date:new Date().toISOString(),skill:habilidad,label:'Inicial'}]
         };
         nuevos.push(jugador);
       });
 
-      // Los jugadores que no están en el archivo quedan fuera del plantel activo,
-      // pero no se borran si tienen historial, para no romper partidos anteriores.
+      // En una base desde 0, simplemente crea el plantel.
+      // En una base existente, los jugadores que no vienen en el archivo
+      // quedan inactivos para no romper referencias históricas.
       state.players.forEach(p=>{
         if(!idsArchivo.has(String(p.id))) p.active=false;
       });
       state.players=nuevos.concat(state.players.filter(p=>!idsArchivo.has(String(p.id))));
 
+      loaded=true;
+      state.lastTeams=null;
       guardarEstadoLocal();
       renderStats();
-      actualizarEstadoExcel(file.name+' · plantel cargado');
+      actualizarEstadoExcel(`${file.name} · plantel cargado · solo datos maestros`);
       renderPlantel();
+
+      // Feedback visible y claro, especialmente útil en celular.
+      const cantidad=nuevos.length;
+      setTimeout(()=>alert(`✅ Plantel cargado correctamente.\n\n${cantidad} jugador${cantidad===1?'':'es'} importado${cantidad===1?'':'s'}.\n\nSolo se cargaron datos del jugador. Los partidos, resultados, estadísticas e historial NO se importaron.`),50);
     }catch(err){
+      console.error('Error al importar plantel:',err);
       alert('No pude importar el plantel.\n\nDetalle: '+err.message);
     }finally{
       event.target.value='';
     }
   };
-  reader.readAsArrayBuffer(e.target.result);
+  reader.onerror=function(){
+    alert('No pude leer el archivo seleccionado.');
+    event.target.value='';
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 function uid(){ return 'p_' + Math.random().toString(36).slice(2,9); }
@@ -2191,6 +2250,7 @@ function renderPlantel(){
       <div class="plantel-file-actions">
         <button class="btn secondary small" onclick="document.getElementById('plantelExcelInput').click()">📥 Cargar plantel</button>
         <button class="btn small" onclick="exportarPlantelExcel()">📤 Descargar plantel</button>
+        <span class="plantel-file-hint">Acepta plantel puro o Excel integral. Solo importa datos maestros.</span>
       </div>
       <p class="desc">Ordenado por rendimiento: primero más victorias, luego menos derrotas, más veces destacado, menos veces que le costó y, en último lugar, habilidad actual para desempatar.</p>
       <button class="edit-link" aria-pressed="${plantelEditMode?'true':'false'}" onclick="togglePlantelEdit()">${plantelEditMode ? 'Terminar edición' : 'Editar plantel'}</button>
