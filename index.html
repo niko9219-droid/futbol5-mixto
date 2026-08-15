@@ -1401,6 +1401,62 @@ label{color:#D9D7D0}
   .field-caption span{margin-top:3px;}
 }
 </style>
+
+<style id="plantel-file-actions-v22">
+.plantel-file-actions{
+  display:flex;
+  gap:9px;
+  flex-wrap:wrap;
+  margin:10px 0 12px;
+}
+.player-edit-inline{
+  order:-1;
+  flex:0 0 auto;
+  width:30px;
+  height:30px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(214,164,63,.55);
+  border-radius:8px;
+  background:#151713;
+  color:#E8C96A;
+  font-size:16px;
+  font-weight:900;
+  cursor:pointer;
+  margin-right:6px;
+  padding:0;
+  vertical-align:middle;
+}
+.player-edit-inline:hover{
+  background:#D6A43F;
+  color:#101310;
+  transform:translateY(-1px);
+}
+.player-cell{
+  display:flex!important;
+  align-items:center!important;
+  gap:4px;
+}
+.player-cell .player-name-mobile{
+  min-width:0;
+}
+@media(max-width:700px){
+  .plantel-file-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  .plantel-file-actions .btn{
+    width:100%;
+    min-height:42px;
+  }
+  .player-edit-inline{
+    width:32px;
+    height:32px;
+    margin-right:2px;
+  }
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -1413,7 +1469,7 @@ label{color:#D9D7D0}
       <button class="btn secondary small" onclick="document.getElementById('excelInput').click()">📥 Importar Excel</button>
       <button class="btn secondary small" onclick="crearBaseDesdeCero()">➕ Nueva base desde 0</button>
       <button class="btn small" onclick="exportarExcel()">📤 Descargar Excel</button>
-      <input id="excelInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
+      <input id="excelInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)"><input id="plantelExcelInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarPlantelExcel(event)">
       <span id="dataStatus" class="data-status">Elegí importar un Excel o crear una base desde 0</span>
     </div>
     <div id="saveToast" class="save-toast" role="status"></div>
@@ -1819,6 +1875,108 @@ function exportarExcel(){
   actualizarEstadoExcel(`Excel descargado · ${pendientes.length ? `Partido ${siguiente} armado` : (jugados ? `Partido ${jugados}` : 'Base inicial')}`);
 }
 
+function exportarPlantelExcel(){
+  if(!loaded){ alert('Primero cargá un plantel o armá una base desde 0.'); return; }
+
+  // Exportación deliberadamente separada del Excel integral:
+  // SOLO datos maestros del jugador. No incluye partidos, resultados,
+  // estadísticas, historial de habilidad ni reglas.
+  const jugadores=state.players
+    .filter(p=>p.active!==false)
+    .map(p=>{
+      const avatar=avatarInfo(p);
+      return {
+        ID:p.id,
+        Nombre:p.name||'',
+        Apodo:p.apodo||'',
+        Genero:p.gender==='F'?'F':'M',
+        Habilidad:Number((Number(p.skill)||0).toFixed(2)),
+        Arquero:p.esArquero?'Si':'No',
+        HabilidadEspecial:p.habilidadEspecial||'',
+        Especialidad:especialLabel(p.habilidadEspecial||''),
+        AvatarTipo:p.avatarTipo||'sinclub',
+        Avatar:avatar.emoji+' — '+avatar.label
+      };
+    });
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(jugadores),'Jugadores');
+  const fecha=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,`futbol5_plantel_${fecha}.xlsx`);
+  actualizarEstadoExcel('Plantel descargado · solo datos de jugadores, sin estadísticas ni partidos');
+}
+
+function importarPlantelExcel(event){
+  const file=event.target.files && event.target.files[0];
+  if(!file) return;
+
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws=wb.Sheets['Jugadores'] || wb.Sheets[wb.SheetNames[0]];
+      if(!ws) throw new Error('No encontré una hoja de jugadores.');
+
+      const rows=rowsToObjects(ws);
+      if(!rows.length) throw new Error('El archivo de plantel está vacío.');
+
+      if(state.players.length && !confirm(
+        'Vas a cargar un plantel. Se actualizarán los datos maestros de los jugadores incluidos en el archivo. Los partidos e historial existentes no se exportan ni se importan con este archivo. ¿Continuar?'
+      )) return;
+
+      const actuales=new Map(state.players.map(p=>[String(p.id),p]));
+      const nuevos=[];
+      const idsArchivo=new Set();
+
+      rows.forEach((r,i)=>{
+        const id=String(r.ID||('p_'+uid()));
+        idsArchivo.add(id);
+        const anterior=actuales.get(id);
+        const habilidad=Number(r.Habilidad||6);
+        const avatarTipo=AVATARES_PREDEFINIDOS.some(a=>a.value===String(r.AvatarTipo||''))
+          ? String(r.AvatarTipo)
+          : 'sinclub';
+        const especialVal=HABILIDADES_ESPECIALES.some(e=>e.value===String(r.HabilidadEspecial||''))
+          ? String(r.HabilidadEspecial)
+          : '';
+
+        const jugador={
+          id,
+          name:String(r.Nombre||anterior?.name||`Jugador ${i+1}`),
+          apodo:String(r.Apodo||''),
+          gender:String(r.Genero||anterior?.gender||'M').toUpperCase()==='F'?'F':'M',
+          skill:Math.max(1,Math.min(10,Number.isFinite(habilidad)?habilidad:6)),
+          matchesPlayed:anterior?.matchesPlayed||0,
+          avatarTipo,
+          avatarValor:'',
+          active:true,
+          esArquero:String(r.Arquero||'No').toLowerCase()==='si',
+          habilidadEspecial:especialVal,
+          skillHistory:anterior?.skillHistory?.length ? anterior.skillHistory : [{date:new Date().toISOString(),skill:habilidad,label:'Inicial'}]
+        };
+        nuevos.push(jugador);
+      });
+
+      // Los jugadores que no están en el archivo quedan fuera del plantel activo,
+      // pero no se borran si tienen historial, para no romper partidos anteriores.
+      state.players.forEach(p=>{
+        if(!idsArchivo.has(String(p.id))) p.active=false;
+      });
+      state.players=nuevos.concat(state.players.filter(p=>!idsArchivo.has(String(p.id))));
+
+      guardarEstadoLocal();
+      renderStats();
+      actualizarEstadoExcel(file.name+' · plantel cargado');
+      renderPlantel();
+    }catch(err){
+      alert('No pude importar el plantel.\n\nDetalle: '+err.message);
+    }finally{
+      event.target.value='';
+    }
+  };
+  reader.readAsArrayBuffer(e.target.result);
+}
+
 function uid(){ return 'p_' + Math.random().toString(36).slice(2,9); }
 
 function seleccionarPartidoPendiente(id){
@@ -1974,6 +2132,7 @@ function renderPlantel(){
       return `
       <tr>
         <td class="player-cell">
+          ${plantelEditMode ? `<button class="player-edit-inline" title="Modificar ${escapeHtml(nombreVisible(p))}" onclick="editarPlayer('${p.id}')">✎</button>` : ''}
           ${avatarHTML(p)}<span class="player-name-mobile">${p.apodo || p.name}</span>
           <span class="gender-tag ${p.gender}">${genderLabel(p.gender)}</span>
           ${p.esArquero ? `<span class="gk-badge-toggle on" style="cursor:default;">🧤</span>` : ''}
@@ -1990,7 +2149,7 @@ function renderPlantel(){
         <td class="specialty-icon-cell" title="${especialLabel(p.habilidadEspecial)}">${especialIcon(p.habilidadEspecial)}</td>
         <td class="row-actions">
           <button class="btn-mini stats-mini" title="Ver estadísticas" onclick="mostrarEstadisticasJugador('${p.id}')">📊</button>
-          ${plantelEditMode ? `<button class="btn-mini" title="Modificar jugador/a" onclick="editarPlayer('${p.id}')">✎</button><button class="del-icon" title="Quitar jugador/a" onclick="deletePlayer('${p.id}')">✕</button>` : ''}
+          ${plantelEditMode ? `<button class="del-icon" title="Quitar jugador/a" onclick="deletePlayer('${p.id}')">✕</button>` : ''}
         </td>
       </tr>`;
     }).join('');
@@ -2029,6 +2188,10 @@ function renderPlantel(){
 
     <div class="card">
       <h2>Plantel (${state.players.filter(p=>p.active!==false).length})</h2>
+      <div class="plantel-file-actions">
+        <button class="btn secondary small" onclick="document.getElementById('plantelExcelInput').click()">📥 Cargar plantel</button>
+        <button class="btn small" onclick="exportarPlantelExcel()">📤 Descargar plantel</button>
+      </div>
       <p class="desc">Ordenado por rendimiento: primero más victorias, luego menos derrotas, más veces destacado, menos veces que le costó y, en último lugar, habilidad actual para desempatar.</p>
       <button class="edit-link" aria-pressed="${plantelEditMode?'true':'false'}" onclick="togglePlantelEdit()">${plantelEditMode ? 'Terminar edición' : 'Editar plantel'}</button>
       ${state.players.some(p=>p.active!==false) ? `
