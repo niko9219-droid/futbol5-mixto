@@ -1643,6 +1643,8 @@ async function loadState(){
   }catch(e){}
   actualizarEstadoExcel(recuperada ? 'Base recuperada de este dispositivo · guardado automático activo' : 'Elegí importar un Excel o crear una base desde 0');
   if(recuperada){
+    migrarEvaluacionesPorId();
+    guardarEstadoLocal();
     renderStats();
     switchTab('plantel');
   }else{
@@ -1815,6 +1817,8 @@ function importarExcel(event){
         arqueroANombre:String(r.ArqueroA||'')||null, arqueroBNombre:String(r.ArqueroB||'')||null,
         resultadoTipo:String(r.ResultadoTipo||'empate'), diferencia:Number(r.Diferencia||0),
         nivelPartido:String(r.NivelPartido||'parejo'),
+        bestIds:String(r.Mejores_IDs||'').split(',').map(x=>x.trim()).filter(Boolean),
+        worstIds:String(r.MasCostaron_IDs||'').split(',').map(x=>x.trim()).filter(Boolean),
         best:String(r.Mejores||'').split(',').map(x=>x.trim()).filter(Boolean),
         worst:String(r.MasCostaron||'').split(',').map(x=>x.trim()).filter(Boolean),
         notas:String(r.Notas||'')
@@ -1872,7 +1876,9 @@ function exportarExcel(){
     ResultadoTipo:m.estado==='armado'?'':(m.resultadoTipo||'empate'),
     Diferencia:m.estado==='armado'?'':(m.diferencia||0),
     NivelPartido:m.estado==='armado'?'':(m.nivelPartido||'parejo'),
+    Mejores_IDs:m.estado==='armado'?'':(m.bestIds||[]).join(', '),
     Mejores:m.estado==='armado'?'':(m.best||[]).join(', '),
+    MasCostaron_IDs:m.estado==='armado'?'':(m.worstIds||[]).join(', '),
     MasCostaron:m.estado==='armado'?'':(m.worst||[]).join(', '),
     Notas:m.notas||''
   }));
@@ -2115,10 +2121,12 @@ function jugadorEstadisticas(p){
     }else if(m.resultadoTipo==='visitante'){
       lado==='B' ? stats.ganados++ : stats.perdidos++;
     }
-    const pn=p.name.toLowerCase();
-    const visible=nombreVisible(p).toLowerCase();
-    const best=(m.best||[]).some(x=>textoJugadorNormalizado(x)===pn || String(x).toLowerCase()===visible);
-    const worst=(m.worst||[]).some(x=>textoJugadorNormalizado(x)===pn || String(x).toLowerCase()===visible);
+    const best=Array.isArray(m.bestIds)
+      ? m.bestIds.includes(p.id)
+      : (m.best||[]).some(x=>textoJugadorNormalizado(x)===p.name.toLowerCase() || String(x).toLowerCase()===nombreVisible(p).toLowerCase());
+    const worst=Array.isArray(m.worstIds)
+      ? m.worstIds.includes(p.id)
+      : (m.worst||[]).some(x=>textoJugadorNormalizado(x)===p.name.toLowerCase() || String(x).toLowerCase()===nombreVisible(p).toLowerCase());
     if(best) stats.destacados++;
     if(worst) stats.costaron++;
   });
@@ -3177,6 +3185,11 @@ function guardarResultado(){
   match.resultadoTipo=resultadoTipo;
   match.diferencia=diferencia;
   match.nivelPartido=nivelPartido;
+  // Guardamos IDs, no solo nombres. Esto evita confundir jugadores con
+  // el mismo nombre y distinto apodo (ej. dos Nico).
+  match.bestIds=[...bestIds];
+  match.worstIds=[...worstIds];
+  // Se mantienen también los textos para mostrar/exportar y compatibilidad.
   match.best=bestIds.map(id=>state.players.find(p=>p.id===id)).filter(Boolean).map(nombreVisible);
   match.worst=worstIds.map(id=>state.players.find(p=>p.id===id)).filter(Boolean).map(nombreVisible);
   match.notas=notas;
@@ -3219,6 +3232,26 @@ function guardarResultado(){
 }
 
 /* ---------- TAB: HISTORIAL ---------- */
+
+function migrarEvaluacionesPorId(){
+  state.matches.forEach(m=>{
+    if(m.estado==='armado') return;
+    if(!Array.isArray(m.bestIds) || !Array.isArray(m.worstIds)){
+      const equipo=[...(m.teamAIds||[]),...(m.teamBIds||[])];
+      const resolver=(txt)=>{
+        const normal=historialNombreDesdeTexto(txt);
+        const candidatos=equipo
+          .map(id=>state.players.find(p=>p.id===id))
+          .filter(Boolean)
+          .filter(p=>p.name===normal || nombreVisible(p)===txt);
+        return candidatos.length===1 ? candidatos[0].id : null;
+      };
+      if(!Array.isArray(m.bestIds)) m.bestIds=(m.best||[]).map(resolver).filter(Boolean);
+      if(!Array.isArray(m.worstIds)) m.worstIds=(m.worst||[]).map(resolver).filter(Boolean);
+    }
+  });
+}
+
 function resultadoHistorialTexto(m){
   if(m.resultadoTipo === 'empate' || (m.resultadoTipo===undefined && m.scoreA===m.scoreB)) return 'Empate';
   if(m.resultadoTipo==='local') return `Ganó local por ${m.diferencia||1}`;
@@ -3258,8 +3291,10 @@ function toggleFormacionHistorial(idx){
     teamB=m.teamB.map(txt=>state.players.find(p=>nombreVisible(p)===txt || p.name===historialNombreDesdeTexto(txt))).filter(Boolean);
   }
 
-  const best=new Set((m.best||[]).map(historialNombreDesdeTexto));
-  const worst=new Set((m.worst||[]).map(historialNombreDesdeTexto));
+  const bestIds=new Set(Array.isArray(m.bestIds) ? m.bestIds : []);
+  const worstIds=new Set(Array.isArray(m.worstIds) ? m.worstIds : []);
+  const bestLegacy=new Set((m.best||[]).map(historialNombreDesdeTexto));
+  const worstLegacy=new Set((m.worst||[]).map(historialNombreDesdeTexto));
   const skillA=teamA.reduce((s,p)=>s+habilidadCompetitiva(p),0);
   const skillB=teamB.reduce((s,p)=>s+habilidadCompetitiva(p),0);
   const global=fuerzaGlobal(teamA,teamB);
@@ -3268,8 +3303,10 @@ function toggleFormacionHistorial(idx){
     const n=nombreVisible(p);
     const key=p.name;
     let mark='';
-    if(best.has(key)) mark+='<span class="historial-arrow-up" title="Destacó">↑</span>';
-    if(worst.has(key)) mark+='<span class="historial-arrow-down" title="Costó">↓</span>';
+    const isBest=bestIds.size ? bestIds.has(p.id) : bestLegacy.has(key);
+    const isWorst=worstIds.size ? worstIds.has(p.id) : worstLegacy.has(key);
+    if(isBest) mark+='<span class="historial-arrow-up" title="Destacó">↑</span>';
+    if(isWorst) mark+='<span class="historial-arrow-down" title="Costó">↓</span>';
     return `<li class="team-player"><span>${n}${p.esArquero?' 🧤':''}${mark}</span><span>${estrellas(p.skill)}</span></li>`;
   };
 
