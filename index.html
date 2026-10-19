@@ -3105,9 +3105,8 @@ function construirImagenEquiposSVG(teamA, teamB, forceA, forceB, global){
       return `
         <line x1="${boxX+35}" y1="${y+82}" x2="${boxX+boxW-35}" y2="${y+82}" stroke="#34342F" stroke-width="2"/>
         ${avatarSvgForShare(p,boxX+65,y+38,31)}
-        <text x="${boxX+115}" y="${y+35}" fill="#F4F0E5" font-size="28" font-weight="700" font-family="Arial">${display}</text>
-        ${starsSvgForShare(p.skill,boxX+115,y+68)}
-        ${p.esArquero ? `<text x="${boxX+boxW-75}" y="${y+43}" fill="#E7B53F" font-size="28" text-anchor="middle" font-family="Arial">🧤</text>` : ''}
+        <text x="${boxX+115}" y="${y+49}" fill="#F4F0E5" font-size="28" font-weight="700" font-family="Arial">${display}</text>
+        ${p.esArquero ? `<text x="${boxX+boxW-75}" y="${y+49}" fill="#E7B53F" font-size="28" text-anchor="middle" font-family="Arial">🧤</text>` : ''}
       `;
     }).join('');
   };
