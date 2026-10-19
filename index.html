@@ -2061,6 +2061,27 @@ function seleccionarPartidoPendiente(id){
   switchTab('resultado');
 }
 
+function eliminarPartidoPendiente(id, destino='historial'){
+  const match=obtenerPartidoPendiente(id);
+  if(!match){
+    alert('Ese partido ya no figura como pendiente.');
+    switchTab(destino==='armar' ? 'armar' : 'historial');
+    return;
+  }
+  const numero=match.numero || (state.matches.indexOf(match)+1);
+  const ok=confirm(`¿Eliminar el Partido ${numero} de los pendientes?\n\nEsto solo quita el armado guardado; no afecta partidos jugados ni las estadísticas del plantel.`);
+  if(!ok) return;
+
+  state.matches=state.matches.filter(m=>m.id!==id || m.estado!=='armado');
+  if(state.lastTeams?.matchId===id){
+    const restantes=partidosPendientes();
+    if(restantes.length) sincronizarLastTeamsConPartido(restantes[restantes.length-1]);
+    else state.lastTeams=null;
+  }
+  guardarEstadoLocal();
+  switchTab(destino==='armar' ? 'armar' : 'historial');
+}
+
 function abrirPartidosPendientes(){
   const pendientes=partidosPendientes();
   if(!pendientes.length){
@@ -2929,6 +2950,7 @@ function renderEditorEquipos(){
       <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn" onclick="compartirEquiposImagen()">📲 Compartir equipos</button>
         <button class="btn secondary" onclick="switchTab('resultado')">Ir a cargar resultado →</button>
+        <button class="btn danger" onclick="eliminarPartidoPendiente(state.lastTeams.matchId, 'armar')">🗑️ Eliminar pendiente</button>
         <button class="btn secondary" onclick="exportarExcel()">📤 Guardar Excel — partido pendiente</button>
       </div>
       <p class="desc share-hint">📲 En el celular genera una imagen y abre el menú de compartir del teléfono; desde ahí podés elegir WhatsApp.</p>
@@ -3502,7 +3524,10 @@ function renderHistorial(){
           <div class="top"><span class="date">Partido ${m.numero||state.matches.indexOf(m)+1} · ${new Date(m.fechaArmado||m.date).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'numeric'})}</span><span class="score">PENDIENTE</span></div>
           <div class="teams">Local: ${(m.teamA||[]).join(', ')}</div>
           <div class="teams">Visitante: ${(m.teamB||[]).join(', ')}</div>
-          <button class="btn secondary small" style="margin-top:8px;" onclick="seleccionarPartidoPendiente('${m.id}');switchTab('resultado')">Cargar resultado →</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <button class="btn secondary small" onclick="seleccionarPartidoPendiente('${m.id}');switchTab('resultado')">Cargar resultado →</button>
+            <button class="btn danger small" onclick="eliminarPartidoPendiente('${m.id}', 'historial')">🗑️ Eliminar pendiente</button>
+          </div>
         </div>`).join('')}
     </div>` : '';
   const items = jugados.map(m=>{
