@@ -1772,7 +1772,7 @@ function f5ParseLocalState(){
 function f5EncodeFirestoreValue(value){
   if(Array.isArray(value)){
     return value.map(item => Array.isArray(item)
-      ? {__f5_encoded_array__: true, items: f5EncodeFirestoreValue(item)}
+      ? {f5EncodedArray: true, items: f5EncodeFirestoreValue(item)}
       : f5EncodeFirestoreValue(item));
   }
   if(value && typeof value === 'object'){
@@ -1787,7 +1787,7 @@ function f5EncodeFirestoreValue(value){
 function f5DecodeFirestoreValue(value){
   if(Array.isArray(value)) return value.map(f5DecodeFirestoreValue);
   if(value && typeof value === 'object'){
-    if(value.__f5_encoded_array__ === true && Array.isArray(value.items)){
+    if(value.f5EncodedArray === true && Array.isArray(value.items)){
       return value.items.map(item => {
         const decoded=f5DecodeFirestoreValue(item);
         return decoded;
