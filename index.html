@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --verde-cancha:#1F6B3F;
@@ -1474,8 +1477,37 @@ label{color:#D9D7D0}
 <style id="share-teams-v26">
 .share-hint{margin-top:8px;font-size:12px;opacity:.82}
 </style>
+
+<style id="f5-firebase-auth-styles">
+  #f5AuthGate{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(7,20,12,.94);backdrop-filter:blur(8px)}
+  #f5AuthCard{width:min(100%,420px);padding:28px;border:1px solid rgba(255,255,255,.18);border-radius:20px;background:#f5f2e9;color:#14261b;box-shadow:0 20px 70px rgba(0,0,0,.4)}
+  #f5AuthCard h2{margin:0 0 8px;font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.04em}
+  #f5AuthCard p{line-height:1.5}
+  #f5AuthCard label{display:block;font-weight:700;margin:14px 0 6px}
+  #f5AuthCard input{display:block;width:100%;padding:12px;border:1px solid #b9c4ba;border-radius:10px;font:inherit;background:#fff;color:#14261b}
+  #f5AuthMessage{min-height:22px;margin-top:12px;font-size:13px;color:#a12828;overflow-wrap:anywhere}
+  #f5AuthSubmit{width:100%;margin-top:16px}
+  #f5SignOut{margin-left:6px}
+  @media(max-width:480px){#f5AuthCard{padding:22px}}
+</style>
+
 </head>
 <body>
+
+<div id="f5AuthGate" role="dialog" aria-modal="true" aria-labelledby="f5AuthTitle">
+  <form id="f5AuthCard" onsubmit="entrarF5Manager(event)">
+    <div style="font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#1f6b3f">Liga interna · Fútbol 5 mixto</div>
+    <h2 id="f5AuthTitle">F5 MANAGER</h2>
+    <p>Ingresá con la cuenta que te habilitaron para acceder a la base compartida.</p>
+    <label for="f5AuthEmail">Correo electrónico</label>
+    <input id="f5AuthEmail" type="email" autocomplete="username" required>
+    <label for="f5AuthPassword">Contraseña</label>
+    <input id="f5AuthPassword" type="password" autocomplete="current-password" required>
+    <button id="f5AuthSubmit" class="btn" type="submit">Ingresar</button>
+    <div id="f5AuthMessage" role="status"></div>
+  </form>
+</div>
+
 <div class="wrap">
   <header class="hero">
     <div class="eyebrow">Liga interna · Fútbol 5 mixto</div>
@@ -1486,6 +1518,7 @@ label{color:#D9D7D0}
       <button class="btn secondary small" onclick="document.getElementById('excelInput').click()">📥 Importar Excel</button>
       <button class="btn secondary small" onclick="crearBaseDesdeCero()">➕ Nueva base desde 0</button>
       <button class="btn small" onclick="exportarExcel()">📤 Descargar Excel</button>
+      <button id="f5SignOut" class="btn secondary small" onclick="salirF5Manager()">Salir</button>
       <input id="excelInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)"><input id="plantelExcelInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarPlantelExcel(event)">
       <span id="dataStatus" class="data-status">Elegí importar un Excel o crear una base desde 0</span>
     </div>
@@ -1501,7 +1534,7 @@ label{color:#D9D7D0}
   </nav>
 
   <div id="content"></div>
-  <footer class="foot">Datos compartidos: cualquiera que abra este link puede verlos y cargarlos.</footer>
+  <footer class="foot">F5 Manager · Base compartida en Firebase · Acceso solo para usuarios invitados.</footer>
 </div>
 
 <script>
@@ -1630,29 +1663,203 @@ function estrellas(skill){
   return `<span class="stars" aria-label="${value.toFixed(1)} de 5 estrellas">${html}</span>`;
 }
 
+
+// Firebase: el HTML sigue alojado en GitHub Pages; Firebase aporta autenticación y base compartida.
+const firebaseConfig = {
+  apiKey: "AIzaSyAg3D82nYC3ii18WqhDqtr8OamekS9-Ejw",
+  authDomain: "f5-manager.firebaseapp.com",
+  projectId: "f5-manager",
+  storageBucket: "f5-manager.firebasestorage.app",
+  messagingSenderId: "733460764911",
+  appId: "1:733460764911:web:fcd51214242ad18156e31a",
+  measurementId: "G-TFJYREB6JE"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const f5Auth = firebase.auth();
+const f5Db = firebase.firestore();
+f5Db.settings({ignoreUndefinedProperties:true});
+
+let f5CurrentUser = null;
+let f5CloudEnabled = false;
+let f5AuthHandling = false;
+let f5CloudSaveTimer = null;
+let f5CloudSaveBusy = false;
+let f5CloudSaveAgain = false;
+const F5_SHARED_DOC = { collection: 'app_data', id: 'shared_state' };
+
+function f5SetAuthMessage(message, isError=true){
+  const el=document.getElementById('f5AuthMessage');
+  if(el){el.textContent=message||'';el.style.color=isError?'#a12828':'#1f6b3f';}
+}
+function f5ShowAuth(message=''){
+  const gate=document.getElementById('f5AuthGate');
+  if(gate) gate.style.display='flex';
+  f5SetAuthMessage(message, true);
+}
+function f5HideAuth(){
+  const gate=document.getElementById('f5AuthGate');
+  if(gate) gate.style.display='none';
+}
+function f5AuthErrorMessage(error){
+  const code=error && error.code ? error.code : '';
+  if(code==='auth/invalid-credential' || code==='auth/wrong-password' || code==='auth/user-not-found') return 'Correo o contraseña incorrectos.';
+  if(code==='auth/too-many-requests') return 'Hubo demasiados intentos. Esperá un rato y probá nuevamente.';
+  if(code==='auth/network-request-failed') return 'No se pudo conectar. Revisá tu conexión a internet.';
+  if(code==='permission-denied' || code==='firestore/permission-denied') return 'Firebase rechazó el acceso. Revisá que tu UID exista en usuarios_autorizados y tenga activo = true.';
+  return (error && error.message) ? error.message : 'No se pudo iniciar sesión.';
+}
+
+async function entrarF5Manager(event){
+  event.preventDefault();
+  const email=document.getElementById('f5AuthEmail').value.trim();
+  const password=document.getElementById('f5AuthPassword').value;
+  const button=document.getElementById('f5AuthSubmit');
+  button.disabled=true;
+  button.textContent='Ingresando…';
+  f5SetAuthMessage('Verificando cuenta…', false);
+  try{
+    await f5Auth.signInWithEmailAndPassword(email,password);
+  }catch(error){
+    f5SetAuthMessage(f5AuthErrorMessage(error), true);
+  }finally{
+    button.disabled=false;
+    button.textContent='Ingresar';
+  }
+}
+
+async function salirF5Manager(){
+  f5CloudEnabled=false;
+  f5CurrentUser=null;
+  await f5Auth.signOut();
+  f5ShowAuth('Sesión cerrada.');
+}
+
+async function f5ValidarInvitado(user){
+  if(!user) return false;
+  const doc=await f5Db.collection('usuarios_autorizados').doc(user.uid).get();
+  if(!doc.exists || doc.data().activo !== true){
+    await f5Auth.signOut();
+    f5CurrentUser=null;
+    f5CloudEnabled=false;
+    f5ShowAuth('Esta cuenta todavía no está autorizada. Pedile al administrador que habilite tu UID en usuarios_autorizados.');
+    return false;
+  }
+  f5CurrentUser=user;
+  f5CloudEnabled=true;
+  f5HideAuth();
+  await loadState();
+  renderStats();
+  if(loaded) switchTab('plantel');
+  else mostrarImportacionInicial();
+  return true;
+}
+
+function f5ParseLocalState(){
+  const keys=['futbol5-session','futbol5-liga-data'];
+  for(const key of keys){
+    try{
+      const raw=localStorage.getItem(key);
+      if(!raw) continue;
+      const parsed=JSON.parse(raw);
+      if(parsed && Array.isArray(parsed.players) && Array.isArray(parsed.matches)) return parsed;
+    }catch(e){}
+  }
+  return null;
+}
+
+async function f5WriteCloudState(showStatus=true){
+  if(!f5CloudEnabled || !f5CurrentUser) return;
+  if(f5CloudSaveBusy){f5CloudSaveAgain=true;return;}
+  f5CloudSaveBusy=true;
+  try{
+    // JSON round-trip removes undefined values and keeps the payload serializable.
+    const safeState=JSON.parse(JSON.stringify(state));
+    await f5Db.collection(F5_SHARED_DOC.collection).doc(F5_SHARED_DOC.id).set({
+      state:safeState,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy:f5CurrentUser.uid
+    });
+    if(showStatus) actualizarEstadoExcel('✓ Guardado en la nube · base compartida');
+  }catch(error){
+    console.error('Error al guardar F5 Manager en Firebase:',error);
+    actualizarEstadoExcel('⚠ No se pudo guardar en la nube. Revisá la conexión.');
+  }finally{
+    f5CloudSaveBusy=false;
+    if(f5CloudSaveAgain){
+      f5CloudSaveAgain=false;
+      f5WriteCloudState(showStatus);
+    }
+  }
+}
+function f5ProgramarGuardadoNube(){
+  if(!f5CloudEnabled) return;
+  clearTimeout(f5CloudSaveTimer);
+  actualizarEstadoExcel('Guardando cambios en la nube…');
+  f5CloudSaveTimer=setTimeout(()=>f5WriteCloudState(true),650);
+}
+
 async function loadState(){
   loaded = false;
   state = { players: [], forbiddenPairs: [], matches: [], lastTeams: null };
-  let recuperada=false;
   try{
-    const raw=localStorage.getItem('futbol5-session');
-    if(raw){
-      const parsed=JSON.parse(raw);
-      if(parsed && Array.isArray(parsed.players) && Array.isArray(parsed.matches)){
-        state=parsed;
+    const cloudDoc=await f5Db.collection(F5_SHARED_DOC.collection).doc(F5_SHARED_DOC.id).get();
+    if(cloudDoc.exists && cloudDoc.data() && cloudDoc.data().state){
+      const cloudState=cloudDoc.data().state;
+      if(Array.isArray(cloudState.players) && Array.isArray(cloudState.matches)){
+        state=cloudState;
         loaded=true;
-        recuperada=true;
+        try{localStorage.setItem('futbol5-session',JSON.stringify(state));}catch(e){}
+        actualizarEstadoExcel('✓ Base compartida cargada desde Firebase');
+        if(loaded){
+          migrarEvaluacionesPorId();
+          try{localStorage.setItem('futbol5-session',JSON.stringify(state));}catch(e){}
+          renderStats();
+        }
+        return;
       }
     }
-  }catch(e){}
-  actualizarEstadoExcel(recuperada ? 'Base recuperada de este dispositivo · guardado automático activo' : 'Elegí importar un Excel o crear una base desde 0');
-  if(recuperada){
-    migrarEvaluacionesPorId();
-    guardarEstadoLocal();
-    renderStats();
-    switchTab('plantel');
-  }else{
+
+    // First cloud login: migrate existing local browser data only if the user confirms.
+    const localState=f5ParseLocalState();
+    if(localState && (localState.players.length || localState.matches.length || localState.forbiddenPairs?.length)){
+      const countPlayers=localState.players.length;
+      const countMatches=localState.matches.length;
+      const migrate=confirm(`Encontré una base guardada en este navegador (${countPlayers} jugadores y ${countMatches} partidos).\\n\\n¿Querés copiarla a Firebase para compartirla? La copia local NO se borra.`);
+      if(migrate){
+        state=localState;
+        loaded=true;
+        migrarEvaluacionesPorId();
+        try{localStorage.setItem('futbol5-session',JSON.stringify(state));}catch(e){}
+        await f5WriteCloudState(false);
+        actualizarEstadoExcel('✓ Base local migrada a Firebase · copia local conservada');
+        return;
+      }else{
+        state=localState;
+        loaded=true;
+        f5CloudEnabled=false; // No subir cambios locales si el usuario rechazó la migración.
+        actualizarEstadoExcel('Base local solamente · migración a la nube pendiente');
+        migrarEvaluacionesPorId();
+        return;
+      }
+    }
+
+    // New cloud project: initialize an empty shared state document.
+    state={players:[],forbiddenPairs:[],matches:[],lastTeams:null};
+    loaded=false;
+    await f5WriteCloudState(false);
+    actualizarEstadoExcel('Firebase conectado · cargá el plantel o importá tu base');
     mostrarInicioBase();
+  }catch(error){
+    console.error('Error al cargar F5 Manager desde Firebase:',error);
+    f5CloudEnabled=false;
+    actualizarEstadoExcel('⚠ Error al conectar con Firebase. Los datos locales no se borraron.');
+    const localState=f5ParseLocalState();
+    if(localState){
+      state=localState; loaded=true; migrarEvaluacionesPorId();
+      mostrarImportacionInicial();
+    }else{
+      mostrarInicioBase();
+    }
   }
 }
 
@@ -1662,7 +1869,7 @@ function crearBaseDesdeCero(){
   loaded = true;
   plantelEditMode = false;
   guardarEstadoLocal();
-  actualizarEstadoExcel('Base nueva desde 0 · lista para cargar jugadores');
+  actualizarEstadoExcel('Base nueva desde 0 · guardado automático activo');
   renderStats();
   switchTab('plantel');
 }
@@ -1690,17 +1897,16 @@ function mostrarInicioBase(){
         <button class="btn" onclick="document.getElementById('excelInput').click()">📥 Cargar Excel existente</button>
         <button class="btn secondary" onclick="crearBaseDesdeCero()">➕ Armar base desde 0</button>
       </div>
-      <p class="desc" style="margin-top:18px;">El Excel contiene la historia completa. Cuando cargues el primer partido, vas a poder descargar la base como <b>Partido 1</b> y compartirla con otro administrador.</p>
-      <div class="msg ok" style="margin-top:12px;">💾 Mientras trabajás, la web guarda automáticamente una copia local en este dispositivo. El Excel sigue siendo el archivo para compartir o respaldar.</div>
+      <p class="desc" style="margin-top:18px;">La base compartida se guarda en Firebase. Podés descargar un Excel como respaldo cuando quieras.</p>
+      <div class="msg ok" style="margin-top:12px;">☁️ Al guardar, los cambios se suben a la nube; al volver a abrir o actualizar la página, se carga la última versión compartida.</div>
     </div>`;
 }
 
 function guardarEstadoLocal(){
-  // Copia automática local. Permite cerrar y volver a abrir la web en el mismo dispositivo/navegador.
-  // El Excel sigue siendo la copia que se comparte y la que sirve como respaldo.
+  // Conservamos una copia local de respaldo y sincronizamos la base compartida.
   try{ localStorage.setItem('futbol5-session', JSON.stringify(state)); }catch(e){}
+  f5ProgramarGuardadoNube();
 }
-
 function saveState(){ guardarEstadoLocal(); }
 
 function partidosJugados(){
@@ -3568,11 +3774,27 @@ document.getElementById('tabs').addEventListener('click', e=>{
   if(btn) switchTab(btn.dataset.tab);
 });
 
-(async function init(){
-  document.getElementById('content').innerHTML = `<div class="card"><div class="empty">Cargando datos...</div></div>`;
-  await loadState();
-  renderStats();
-  mostrarImportacionInicial();
+(function initF5Firebase(){
+  document.getElementById('content').innerHTML = `<div class="card"><div class="empty">Conectando con F5 Manager...</div></div>`;
+  f5ShowAuth();
+  f5Auth.onAuthStateChanged(async user=>{
+    if(f5AuthHandling) return;
+    f5AuthHandling=true;
+    try{
+      if(!user){
+        f5CurrentUser=null;
+        f5CloudEnabled=false;
+        f5ShowAuth();
+      }else{
+        await f5ValidarInvitado(user);
+      }
+    }catch(error){
+      console.error('No se pudo validar el acceso de F5 Manager:',error);
+      f5ShowAuth(f5AuthErrorMessage(error));
+    }finally{
+      f5AuthHandling=false;
+    }
+  });
 })();
 </script>
 </body>
