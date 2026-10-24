@@ -1685,7 +1685,13 @@ let f5AuthHandling = false;
 let f5CloudSaveTimer = null;
 let f5CloudSaveBusy = false;
 let f5CloudSaveAgain = false;
-const F5_SHARED_DOC = { collection: 'app_data', id: 'shared_state' };
+const F5_LEGACY_DOC = { collection: 'app_data', id: 'shared_state' };
+let f5UserRole = 'user';
+let f5IsSuperAdmin = false;
+let f5ActiveLeague = null;
+let f5AvailableLeagues = [];
+function f5MembershipId(uid, leagueId){ return `${uid}_${leagueId}`; }
+function f5LeagueDataRef(){ if(!f5ActiveLeague) throw new Error('No hay una liga seleccionada.'); return f5Db.collection('ligas').doc(f5ActiveLeague.id).collection('data').doc('shared_state'); }
 
 function f5SetAuthMessage(message, isError=true){
   const el=document.getElementById('f5AuthMessage');
@@ -1739,19 +1745,107 @@ async function f5ValidarInvitado(user){
   const doc=await f5Db.collection('usuarios_autorizados').doc(user.uid).get();
   if(!doc.exists || doc.data().activo !== true){
     await f5Auth.signOut();
-    f5CurrentUser=null;
-    f5CloudEnabled=false;
-    f5ShowAuth('Esta cuenta todavía no está autorizada. Pedile al administrador que habilite tu UID en usuarios_autorizados.');
+    f5CurrentUser=null; f5CloudEnabled=false;
+    f5ShowAuth('Esta cuenta todavía no está autorizada. Pedile al propietario que habilite tu usuario.');
     return false;
   }
   f5CurrentUser=user;
+  f5UserRole=String(doc.data().rol||'user');
+  f5IsSuperAdmin=f5UserRole==='superadmin';
   f5CloudEnabled=true;
   f5HideAuth();
+  await f5CargarLigasUsuario();
+  return true;
+}
+
+async function f5CargarLigasUsuario(){
+  f5AvailableLeagues=[];
+  if(f5IsSuperAdmin){
+    const owned=await f5Db.collection('ligas').where('ownerUid','==',f5CurrentUser.uid).get();
+    owned.forEach(d=>f5AvailableLeagues.push({id:d.id,...d.data()}));
+    // Migración inicial: la base compartida actual se convierte en la primera liga, sin borrar el origen.
+    if(!f5AvailableLeagues.length){
+      let legacyState=null;
+      try{
+        const legacy=await f5Db.collection(F5_LEGACY_DOC.collection).doc(F5_LEGACY_DOC.id).get();
+        if(legacy.exists && legacy.data()?.state) legacyState=f5DecodeFirestoreValue(legacy.data().state);
+      }catch(e){ console.warn('No se pudo leer la base anterior; se creará una liga vacía.',e); }
+      const ref=f5Db.collection('ligas').doc();
+      const league={nombre:'Liga interna',ownerUid:f5CurrentUser.uid,activa:true,createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+      await ref.set(league);
+      const membership={uid:f5CurrentUser.uid,ligaId:ref.id,activo:true,rol:'admin',email:f5CurrentUser.email||''};
+      await f5Db.collection('membresias').doc(f5MembershipId(f5CurrentUser.uid,ref.id)).set(membership);
+      const initialState=(legacyState && Array.isArray(legacyState.players) && Array.isArray(legacyState.matches)) ? legacyState : {players:[],forbiddenPairs:[],matches:[],lastTeams:null};
+      await ref.collection('data').doc('shared_state').set({state:f5EncodeFirestoreValue(JSON.parse(JSON.stringify(initialState))),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:f5CurrentUser.uid});
+      f5AvailableLeagues.push({id:ref.id,...league});
+    }
+  } else {
+    const memberships=await f5Db.collection('membresias').where('uid','==',f5CurrentUser.uid).where('activo','==',true).get();
+    for(const m of memberships.docs){
+      const md=m.data();
+      const leagueDoc=await f5Db.collection('ligas').doc(md.ligaId).get();
+      if(leagueDoc.exists && leagueDoc.data().activa!==false) f5AvailableLeagues.push({id:leagueDoc.id,...leagueDoc.data(),membershipRole:md.rol||'user'});
+    }
+  }
+  if(!f5AvailableLeagues.length){
+    f5CloudEnabled=false;
+    document.getElementById('content').innerHTML='<div class="card"><h2>Sin ligas asignadas</h2><p>Tu cuenta está habilitada, pero todavía no pertenece a ninguna liga. Contactá al propietario de F5 Manager.</p></div>';
+    actualizarEstadoExcel('No tenés ligas asignadas');
+    f5RenderLeagueBar();
+    return;
+  }
+  f5ActiveLeague=f5AvailableLeagues[0];
+  f5RenderLeagueBar();
   await loadState();
   renderStats();
-  if(loaded) switchTab('plantel');
-  else mostrarImportacionInicial();
-  return true;
+  if(loaded) switchTab('plantel'); else mostrarImportacionInicial();
+}
+
+function f5RenderLeagueBar(){
+  let bar=document.getElementById('f5LeagueBar');
+  if(!bar){
+    bar=document.createElement('div'); bar.id='f5LeagueBar';
+    bar.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border:1px solid #514329;border-radius:14px;background:rgba(0,0,0,.18)';
+    const header=document.querySelector('.hero');
+    const stats=document.getElementById('statsRow');
+    header.insertBefore(bar,stats);
+  }
+  const options=f5AvailableLeagues.map(l=>`<option value="${l.id}" ${f5ActiveLeague?.id===l.id?'selected':''}>${f5EscapeHtml(l.nombre||'Liga sin nombre')}</option>`).join('');
+  bar.innerHTML=`<label for="f5LeagueSelect" style="font-size:12px;color:#d6a332;font-weight:700;letter-spacing:.08em">LIGA ACTIVA</label><select id="f5LeagueSelect" style="max-width:260px;min-width:180px;padding:10px;border-radius:8px;background:#171713;color:#f6f0df;border:1px solid #514329">${options}</select>${f5IsSuperAdmin?'<button class="btn small" onclick="f5CrearLigaUI()">＋ Crear liga</button><button class="btn secondary small" onclick="f5AgregarMiembroUI()">＋ Invitar administrador</button>':''}`;
+  const select=document.getElementById('f5LeagueSelect');
+  if(select) select.onchange=()=>f5CambiarLiga(select.value);
+}
+function f5EscapeHtml(value){return String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function f5CambiarLiga(id){
+  const league=f5AvailableLeagues.find(l=>l.id===id); if(!league)return;
+  if(f5CloudSaveTimer){clearTimeout(f5CloudSaveTimer);f5CloudSaveTimer=null;}
+  if(f5CloudSaveBusy){alert('Esperá a que termine el guardado actual antes de cambiar de liga.');f5RenderLeagueBar();return;}
+  f5ActiveLeague=league; await loadState(); renderStats(); if(loaded) switchTab('plantel'); else mostrarImportacionInicial(); f5RenderLeagueBar();
+}
+async function f5CrearLigaUI(){
+  if(!f5IsSuperAdmin){alert('Solo el propietario puede crear ligas.');return;}
+  const nombre=prompt('Nombre de la nueva liga:'); if(!nombre || !nombre.trim())return;
+  try{
+    const ref=f5Db.collection('ligas').doc();
+    await ref.set({nombre:nombre.trim(),ownerUid:f5CurrentUser.uid,activa:true,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await f5Db.collection('membresias').doc(f5MembershipId(f5CurrentUser.uid,ref.id)).set({uid:f5CurrentUser.uid,ligaId:ref.id,activo:true,rol:'admin',email:f5CurrentUser.email||''});
+    await ref.collection('data').doc('shared_state').set({state:{players:[],forbiddenPairs:[],matches:[],lastTeams:null},updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:f5CurrentUser.uid});
+    f5AvailableLeagues.push({id:ref.id,nombre:nombre.trim(),ownerUid:f5CurrentUser.uid,activa:true});
+    f5ActiveLeague=f5AvailableLeagues[f5AvailableLeagues.length-1]; f5RenderLeagueBar(); await loadState(); renderStats(); switchTab('plantel');
+    alert('Liga creada. Ya podés cargar su plantel o importar su Excel.');
+  }catch(e){console.error('Error creando liga:',e);alert('No se pudo crear la liga. Revisá la consola y las reglas de Firestore.');}
+}
+async function f5AgregarMiembroUI(){
+  if(!f5IsSuperAdmin || !f5ActiveLeague){alert('Seleccioná una liga y verificá que seas el propietario.');return;}
+  const uid=prompt('Pegá el UID de la cuenta creada en Firebase Authentication:'); if(!uid || !uid.trim())return;
+  const email=prompt('Email de esa cuenta (solo para identificarla):')||'';
+  const role=prompt('Rol dentro de esta liga: escribí admin o user','admin'); if(!['admin','user'].includes((role||'').trim())){alert('Rol no válido. Usá admin o user.');return;}
+  try{
+    const authDoc=await f5Db.collection('usuarios_autorizados').doc(uid.trim()).get();
+    if(!authDoc.exists || authDoc.data().activo!==true){alert('Esa cuenta todavía no está habilitada en usuarios_autorizados. Creá o activá su autorización primero.');return;}
+    await f5Db.collection('membresias').doc(f5MembershipId(uid.trim(),f5ActiveLeague.id)).set({uid:uid.trim(),ligaId:f5ActiveLeague.id,activo:true,rol:role.trim(),email:email.trim()});
+    alert('Usuario agregado a '+(f5ActiveLeague.nombre||'la liga')+'. Ya puede cerrar sesión y volver a entrar para verla.');
+  }catch(e){console.error('Error agregando miembro:',e);alert('No se pudo agregar el usuario. Revisá las reglas de Firestore.');}
 }
 
 function f5ParseLocalState(){
@@ -1808,7 +1902,7 @@ async function f5WriteCloudState(showStatus=true){
     // El JSON round-trip elimina valores no serializables; luego codificamos arrays internos.
     const plainState=JSON.parse(JSON.stringify(state));
     const safeState=f5EncodeFirestoreValue(plainState);
-    await f5Db.collection(F5_SHARED_DOC.collection).doc(F5_SHARED_DOC.id).set({
+    await f5LeagueDataRef().set({
       state:safeState,
       updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
       updatedBy:f5CurrentUser.uid
@@ -1836,7 +1930,8 @@ async function loadState(){
   loaded = false;
   state = { players: [], forbiddenPairs: [], matches: [], lastTeams: null };
   try{
-    const cloudDoc=await f5Db.collection(F5_SHARED_DOC.collection).doc(F5_SHARED_DOC.id).get();
+    if(!f5ActiveLeague) throw new Error('No hay una liga activa.');
+    const cloudDoc=await f5LeagueDataRef().get();
     if(cloudDoc.exists && cloudDoc.data() && cloudDoc.data().state){
       const cloudState=f5DecodeFirestoreValue(cloudDoc.data().state);
       if(Array.isArray(cloudState.players) && Array.isArray(cloudState.matches)){
@@ -1853,8 +1948,8 @@ async function loadState(){
       }
     }
 
-    // First cloud login: migrate existing local browser data only if the user confirms.
-    const localState=f5ParseLocalState();
+    // Cada liga nueva comienza vacía. La migración de la base anterior la realiza el propietario al crear la primera liga.
+    const localState=null;
     if(localState && (localState.players.length || localState.matches.length || localState.forbiddenPairs?.length)){
       const countPlayers=localState.players.length;
       const countMatches=localState.matches.length;
