@@ -514,7 +514,7 @@
 .plantel-stats-table thead tr,
 .plantel-stats-table tbody tr{
   display:grid;
-  grid-template-columns: 24% 34% 19% 14% 9%;
+  grid-template-columns: 14% 42% 28% 8% 8%;
   align-items:center;
   width:100%;
   min-height:64px;
@@ -1101,10 +1101,11 @@ label{color:#D9D7D0}
 
   .plantel-stats-table .player-name-mobile{
     display:block!important;
-    min-width:0!important;
-    max-width:125px!important;
-    overflow:hidden!important;
-    text-overflow:ellipsis!important;
+    flex:0 0 auto!important;
+    min-width:max-content!important;
+    max-width:none!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
     white-space:nowrap!important;
   }
 
@@ -4119,214 +4120,20 @@ document.getElementById('tabs').addEventListener('click', e=>{
 }
 </style>
 
-
-
-<style id="plantel-mobile-layout-final-v40">
-/* Corrección definitiva: sobreescribe el grid móvil anterior que fijaba 210px
-   para la primera columna. La tabla sigue siendo desplazable horizontalmente. */
-@media (max-width: 700px) {
-  .table-scroll {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-
-  .plantel-stats-table {
-    display: block !important;
-    width: 625px !important;
-    min-width: 625px !important;
-    max-width: none !important;
-    table-layout: fixed !important;
-  }
-
-  .plantel-stats-table thead,
-  .plantel-stats-table tbody {
-    display: block !important;
-    width: 625px !important;
-    min-width: 625px !important;
-  }
-
+<style id="plantel-mobile-full-apodo-v40">
+@media (max-width:700px) {
+  .plantel-stats-table { min-width:760px !important; }
   .plantel-stats-table thead tr,
-  .plantel-stats-table tbody tr {
-    display: grid !important;
-    grid-template-columns: 40px 165px 280px 75px 65px !important;
-    width: 625px !important;
-    min-width: 625px !important;
-    max-width: 625px !important;
-  }
-
-  .plantel-stats-table thead th,
-  .plantel-stats-table tbody td {
-    box-sizing: border-box !important;
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    padding-left: 6px !important;
-    padding-right: 6px !important;
-    overflow: hidden !important;
-  }
-
-  .plantel-stats-table thead th:nth-child(1),
-  .plantel-stats-table tbody td:nth-child(1) {
-    width: 40px !important;
-    min-width: 40px !important;
-    max-width: 40px !important;
-    padding-left: 2px !important;
-    padding-right: 2px !important;
-    justify-content: center !important;
-    text-align: center !important;
-  }
-
-  .plantel-stats-table thead th:nth-child(2),
-  .plantel-stats-table tbody td:nth-child(2) {
-    width: 165px !important;
-    min-width: 165px !important;
-    max-width: 165px !important;
-  }
-
-  .plantel-stats-table thead th:nth-child(3),
-  .plantel-stats-table tbody td:nth-child(3) {
-    width: 280px !important;
-    min-width: 280px !important;
-    max-width: 280px !important;
-  }
-
-  .plantel-stats-table thead th:nth-child(4),
-  .plantel-stats-table tbody td:nth-child(4) {
-    width: 75px !important;
-    min-width: 75px !important;
-    max-width: 75px !important;
-  }
-
-  .plantel-stats-table thead th:nth-child(5),
-  .plantel-stats-table tbody td:nth-child(5) {
-    width: 65px !important;
-    min-width: 65px !important;
-    max-width: 65px !important;
-  }
-
+  .plantel-stats-table tbody tr { grid-template-columns: 14% 42% 28% 8% 8% !important; }
   .plantel-stats-table .player-name-mobile {
-    max-width: 95px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    flex: 0 0 auto !important;
+    width: max-content !important;
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
   }
 }
 </style>
-
-
-
-<style id="desktop-plantel-balanced-v43">
-/* Escritorio: tabla completa dentro del contenedor, sin scroll horizontal.
-   Mantiene intactas las reglas móviles de v40. */
-@media (min-width: 701px) {
-  .table-scroll {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: visible !important;
-  }
-
-  .plantel-stats-table {
-    display: table !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    table-layout: fixed !important;
-    border-collapse: collapse !important;
-  }
-
-  .plantel-stats-table thead {
-    display: table-header-group !important;
-    width: auto !important;
-    min-width: 0 !important;
-  }
-
-  .plantel-stats-table tbody {
-    display: table-row-group !important;
-    width: auto !important;
-    min-width: 0 !important;
-  }
-
-  .plantel-stats-table thead tr,
-  .plantel-stats-table tbody tr {
-    display: table-row !important;
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-  }
-
-  .plantel-stats-table thead th,
-  .plantel-stats-table tbody td {
-    display: table-cell !important;
-    box-sizing: border-box !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    padding: 12px 8px !important;
-    vertical-align: middle !important;
-    overflow: hidden !important;
-  }
-
-  .plantel-stats-table th:nth-child(1),
-  .plantel-stats-table td:nth-child(1) {
-    width: 5% !important;
-    text-align: left !important;
-    padding-left: 3px !important;
-    padding-right: 4px !important;
-  }
-
-  .plantel-stats-table th:nth-child(2),
-  .plantel-stats-table td:nth-child(2) {
-    width: 25% !important;
-    padding-left: 6px !important;
-    padding-right: 10px !important;
-  }
-
-  .plantel-stats-table th:nth-child(3),
-  .plantel-stats-table td:nth-child(3) {
-    width: 42% !important;
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-  }
-
-  .plantel-stats-table td.mobile-stats {
-    display: table-cell !important;
-    white-space: nowrap !important;
-    font-size: 12px !important;
-    line-height: 1.5 !important;
-  }
-
-  .plantel-stats-table td.mobile-stats span {
-    display: inline-block !important;
-    white-space: nowrap !important;
-    margin: 0 8px 0 0 !important;
-    vertical-align: middle !important;
-  }
-
-  .plantel-stats-table td.mobile-stats span:last-child {
-    margin-right: 0 !important;
-  }
-
-  .plantel-stats-table th:nth-child(4),
-  .plantel-stats-table td:nth-child(4) {
-    width: 18% !important;
-    text-align: center !important;
-  }
-
-  .plantel-stats-table th:nth-child(5),
-  .plantel-stats-table td:nth-child(5) {
-    width: 10% !important;
-    text-align: center !important;
-  }
-
-  .plantel-stats-table td:nth-child(2) .player-name-mobile {
-    max-width: 170px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-}
-</style>
-
 </body>
 </html>
