@@ -4217,77 +4217,77 @@ document.getElementById('tabs').addEventListener('click', e=>{
 
 
 
-<style id="desktop-plantel-spacing-v41">
-/* En escritorio aprovechamos el ancho disponible y separamos cada estadística.
-   La regla móvil v40 permanece intacta. */
+<style id="desktop-stats-inline-v42">
+/* Escritorio: mantener todas las estadísticas en una línea y separarlas.
+   La disposición compacta móvil de v40 queda intacta. */
 @media (min-width: 701px) {
   .table-scroll {
     width: 100%;
     max-width: 100%;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .plantel-stats-table {
     width: 100% !important;
-    min-width: 0 !important;
-    table-layout: fixed !important;
+    min-width: 1000px !important;
+    table-layout: auto !important;
     border-collapse: collapse;
   }
 
-  .plantel-stats-table thead th:nth-child(1),
-  .plantel-stats-table tbody td:nth-child(1) {
-    width: 7% !important;
-  }
-
-  .plantel-stats-table thead th:nth-child(2),
-  .plantel-stats-table tbody td:nth-child(2) {
-    width: 28% !important;
-  }
-
-  .plantel-stats-table thead th:nth-child(3),
-  .plantel-stats-table tbody td:nth-child(3) {
-    width: 36% !important;
-  }
-
-  .plantel-stats-table thead th:nth-child(4),
-  .plantel-stats-table tbody td:nth-child(4) {
-    width: 18% !important;
-  }
-
-  .plantel-stats-table thead th:nth-child(5),
-  .plantel-stats-table tbody td:nth-child(5) {
-    width: 11% !important;
-  }
-
-  .plantel-stats-table thead th {
+  .plantel-stats-table th,
+  .plantel-stats-table td {
     padding: 12px 12px !important;
-    text-align: left;
+    vertical-align: middle !important;
   }
 
-  .plantel-stats-table tbody td {
-    padding: 14px 12px !important;
-    vertical-align: middle;
+  .plantel-stats-table th:nth-child(1),
+  .plantel-stats-table td:nth-child(1) {
+    min-width: 48px !important;
+    width: 58px !important;
   }
 
-  .plantel-stats-table tbody td.mobile-stats {
-    display: flex !important;
-    align-items: center;
-    flex-wrap: wrap;
-    column-gap: 16px !important;
-    row-gap: 8px !important;
-    padding-right: 18px !important;
+  .plantel-stats-table th:nth-child(2),
+  .plantel-stats-table td:nth-child(2) {
+    min-width: 190px !important;
+    width: 230px !important;
   }
 
-  .plantel-stats-table tbody td.mobile-stats > span {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-    margin: 0 !important;
+  .plantel-stats-table th:nth-child(3),
+  .plantel-stats-table td:nth-child(3) {
+    min-width: 390px !important;
+    width: 410px !important;
   }
 
-  .plantel-stats-table tbody td.player-cell {
-    gap: 8px;
+  .plantel-stats-table td.mobile-stats {
+    display: table-cell !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    padding-right: 20px !important;
+  }
+
+  .plantel-stats-table td.mobile-stats span {
+    display: inline-block !important;
+    white-space: nowrap !important;
+    margin-right: 13px !important;
+    vertical-align: middle !important;
+  }
+
+  .plantel-stats-table td.mobile-stats span:last-child {
+    margin-right: 0 !important;
+  }
+
+  .plantel-stats-table th:nth-child(4),
+  .plantel-stats-table td:nth-child(4) {
+    min-width: 120px !important;
+    width: 140px !important;
+  }
+
+  .plantel-stats-table th:nth-child(5),
+  .plantel-stats-table td:nth-child(5) {
+    min-width: 64px !important;
+    width: 74px !important;
   }
 }
 </style>
