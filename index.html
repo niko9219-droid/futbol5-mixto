@@ -1515,12 +1515,9 @@ label{color:#D9D7D0}
     <p class="subtitle">Armá equipos equilibrados. Jugá. Registrá el resultado y hacé evolucionar el plantel.</p>
     <div class="stats-row" id="statsRow"></div>
     <div class="data-bar">
-      <button class="btn secondary small" onclick="document.getElementById('excelInput').click()">📥 Importar Excel</button>
-      <button class="btn secondary small" onclick="crearBaseDesdeCero()">➕ Nueva base desde 0</button>
-      <button class="btn small" onclick="exportarExcel()">📤 Descargar Excel</button>
       <button id="f5SignOut" class="btn secondary small" onclick="salirF5Manager()">Salir</button>
       <input id="excelInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)"><input id="plantelExcelInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="importarPlantelExcel(event)">
-      <span id="dataStatus" class="data-status">Elegí importar un Excel o crear una base desde 0</span>
+      <span id="dataStatus" class="data-status">Base compartida en Firebase</span>
     </div>
     <div id="saveToast" class="save-toast" role="status"></div>
   </header>
@@ -1534,7 +1531,7 @@ label{color:#D9D7D0}
   </nav>
 
   <div id="content"></div>
-  <footer class="foot">F5 Manager · Base compartida en Firebase · Acceso solo para usuarios invitados.</footer>
+  <footer class="foot">F5 Manager · Ligas independientes en Firebase · Acceso por invitación.</footer>
 </div>
 
 <script>
@@ -1811,11 +1808,26 @@ function f5RenderLeagueBar(){
     header.insertBefore(bar,stats);
   }
   const options=f5AvailableLeagues.map(l=>`<option value="${l.id}" ${f5ActiveLeague?.id===l.id?'selected':''}>${f5EscapeHtml(l.nombre||'Liga sin nombre')}</option>`).join('');
-  bar.innerHTML=`<label for="f5LeagueSelect" style="font-size:12px;color:#d6a332;font-weight:700;letter-spacing:.08em">LIGA ACTIVA</label><select id="f5LeagueSelect" style="max-width:260px;min-width:180px;padding:10px;border-radius:8px;background:#171713;color:#f6f0df;border:1px solid #514329">${options}</select>${f5IsSuperAdmin?'<button class="btn small" onclick="f5CrearLigaUI()">＋ Crear liga</button><button class="btn secondary small" onclick="f5AgregarMiembroUI()">＋ Invitar administrador</button>':''}`;
+  const puedeAdministrar=f5IsSuperAdmin || f5ActiveLeague?.membershipRole==='admin';
+  bar.innerHTML=`<label for="f5LeagueSelect" style="font-size:12px;color:#d6a332;font-weight:700;letter-spacing:.08em">LIGA ACTIVA</label><select id="f5LeagueSelect" style="max-width:260px;min-width:180px;padding:10px;border-radius:8px;background:#171713;color:#f6f0df;border:1px solid #514329">${options}</select>${f5IsSuperAdmin?'<button class="btn small" onclick="f5CrearLigaUI()">＋ Crear liga</button><button class="btn secondary small" onclick="f5AgregarMiembroUI()">＋ Invitar administrador</button>':''}${puedeAdministrar?'<button class="btn secondary small" onclick="f5AdministrarLigaUI()">⚙ Administrar liga</button>':''}`;
   const select=document.getElementById('f5LeagueSelect');
   if(select) select.onchange=()=>f5CambiarLiga(select.value);
 }
 function f5EscapeHtml(value){return String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function f5PuedeAdministrarLiga(){ return !!(f5IsSuperAdmin || f5ActiveLeague?.membershipRole==='admin'); }
+function f5AdministrarLigaUI(){
+  if(!f5PuedeAdministrarLiga()){ alert('Solo un administrador puede gestionar las copias y la configuración de esta liga.'); return; }
+  const choice=prompt(`ADMINISTRAR: ${f5ActiveLeague?.nombre||'Liga'}\n\n1. Importar base integral desde Excel\n2. Exportar respaldo integral a Excel\n3. Importar solo el plantel\n4. Exportar solo el plantel\n5. Reiniciar esta liga desde cero\n\nIngresá un número (1-5):`);
+  if(choice===null)return;
+  switch(choice.trim()){
+    case '1': document.getElementById('excelInput').click(); break;
+    case '2': exportarExcel(); break;
+    case '3': document.getElementById('plantelExcelInput').click(); break;
+    case '4': exportarPlantelExcel(); break;
+    case '5': crearBaseDesdeCero(); break;
+    default: alert('Opción no válida. Elegí un número del 1 al 5.');
+  }
+}
 async function f5CambiarLiga(id){
   const league=f5AvailableLeagues.find(l=>l.id===id); if(!league)return;
   if(f5CloudSaveTimer){clearTimeout(f5CloudSaveTimer);f5CloudSaveTimer=null;}
@@ -1993,12 +2005,18 @@ async function loadState(){
 }
 
 function crearBaseDesdeCero(){
-  if(loaded && (state.players.length || state.matches.length) && !confirm('Esto va a reemplazar la base actual por una nueva base vacía. ¿Continuar?')) return;
+  if(!f5PuedeAdministrarLiga()){ alert('Solo un administrador puede reiniciar esta liga.'); return; }
+  const tieneDatos=loaded && (state.players.length || state.matches.length || (state.forbiddenPairs||[]).length);
+  if(tieneDatos){
+    const esperado=`REINICIAR ${f5ActiveLeague?.nombre||'LIGA'}`;
+    const confirmacion=prompt(`⚠️ Esta acción borrará el plantel, las reglas y el historial de ESTA liga en la nube. No afecta a otras ligas.\n\nPara confirmar, escribí exactamente:\n${esperado}`);
+    if(confirmacion!==esperado) { alert('Reinicio cancelado. No se modificó la base.'); return; }
+  }
   state = { players: [], forbiddenPairs: [], matches: [], lastTeams: null };
   loaded = true;
   plantelEditMode = false;
   guardarEstadoLocal();
-  actualizarEstadoExcel('Base nueva desde 0 · guardado automático activo');
+  actualizarEstadoExcel('Liga reiniciada · guardando en la nube…');
   renderStats();
   switchTab('plantel');
 }
@@ -2026,7 +2044,7 @@ function mostrarInicioBase(){
         <button class="btn" onclick="document.getElementById('excelInput').click()">📥 Cargar Excel existente</button>
         <button class="btn secondary" onclick="crearBaseDesdeCero()">➕ Armar base desde 0</button>
       </div>
-      <p class="desc" style="margin-top:18px;">La base compartida se guarda en Firebase. Podés descargar un Excel como respaldo cuando quieras.</p>
+      <p class="desc" style="margin-top:18px;">La base de esta liga se guarda en Firebase. Los administradores pueden importar una base o descargar un respaldo desde «Administrar liga».</p>
       <div class="msg ok" style="margin-top:12px;">☁️ Al guardar, los cambios se suben a la nube; al volver a abrir o actualizar la página, se carga la última versión compartida.</div>
     </div>`;
 }
@@ -2114,6 +2132,9 @@ function fechaISOExcel(value, fallback){
 function importarExcel(event){
   const file=event.target.files && event.target.files[0];
   if(!file) return;
+  if(!f5PuedeAdministrarLiga()){ alert('Solo un administrador puede importar una base integral.'); event.target.value=''; return; }
+  const tieneDatos=loaded && (state.players.length || state.matches.length || (state.forbiddenPairs||[]).length);
+  if(tieneDatos && !confirm(`Vas a reemplazar los datos de la liga «${f5ActiveLeague?.nombre||'actual'}» con el contenido del Excel. Esta acción no afecta a otras ligas. ¿Continuar?`)){ event.target.value=''; return; }
   const reader=new FileReader();
   reader.onload=function(e){
     try{
@@ -2192,6 +2213,7 @@ function importarExcel(event){
 }
 
 function exportarExcel(){
+  if(!f5PuedeAdministrarLiga()){ alert('Solo un administrador puede exportar la base integral.'); return; }
   if(!loaded){ alert('Primero cargá un Excel o armá una base desde 0.'); return; }
   const wb=XLSX.utils.book_new();
   const jugadores=state.players.map(p=>({ID:p.id,Nombre:p.name,Apodo:p.apodo||'',Genero:p.gender,Habilidad:Number(p.skill.toFixed(2)),Arquero:p.esArquero?'Si':'No',AvatarTipo:p.avatarTipo||'inicial',AvatarValor:p.avatarValor||'',PartidosJugados:p.matchesPlayed||0,Activo:p.active===false?'No':'Si'}));
@@ -2235,6 +2257,7 @@ function exportarExcel(){
 }
 
 function exportarPlantelExcel(){
+  if(!f5PuedeAdministrarLiga()){ alert('Solo un administrador puede exportar el plantel.'); return; }
   if(!loaded){ alert('Primero cargá un plantel o armá una base desde 0.'); return; }
 
   // Exportación deliberadamente separada del Excel integral:
@@ -2268,7 +2291,7 @@ function exportarPlantelExcel(){
 function importarPlantelExcel(event){
   const file=event.target.files && event.target.files[0];
   if(!file) return;
-
+  if(!f5PuedeAdministrarLiga()){ alert('Solo un administrador puede importar un plantel.'); event.target.value=''; return; }
   const reader=new FileReader();
   reader.onload=function(e){
     try{
@@ -2615,11 +2638,6 @@ function renderPlantel(){
 
     <div class="card">
       <h2>Plantel (${state.players.filter(p=>p.active!==false).length})</h2>
-      <div class="plantel-file-actions">
-        <button class="btn secondary small" onclick="document.getElementById('plantelExcelInput').click()">📥 Cargar plantel</button>
-        <button class="btn small" onclick="exportarPlantelExcel()">📤 Descargar plantel</button>
-        <span class="plantel-file-hint">Acepta plantel puro o Excel integral. Solo importa datos maestros.</span>
-      </div>
       <p class="desc">Ordenado por rendimiento: primero más victorias, luego menos derrotas, más veces destacado, menos veces que le costó y, en último lugar, habilidad actual para desempatar.</p>
       <button class="edit-link" aria-pressed="${plantelEditMode?'true':'false'}" onclick="togglePlantelEdit()">${plantelEditMode ? 'Terminar edición' : 'Editar plantel'}</button>
       ${state.players.some(p=>p.active!==false) ? `
