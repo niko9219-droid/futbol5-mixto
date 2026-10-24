@@ -379,7 +379,8 @@
 .plantel-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:10px 0}
 .share-top10-btn{background:linear-gradient(135deg,#D5A136,#E9B94B);color:#171711;border:1px solid #F0C75D;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
 .share-top10-btn:active{transform:scale(.98)}
-@media(max-width:700px){.plantel-toolbar{align-items:stretch}.share-top10-btn{width:100%;min-height:44px}}
+@media(max-width:700px){.plantel-toolbar{align-items:center;justify-content:flex-start}.share-top10-container{display:block;width:100%;max-width:100%;margin:12px 0 4px;clear:both}.share-top10-btn{display:inline-flex;align-items:center;justify-content:center;width:auto;max-width:100%;min-height:44px;white-space:normal;text-align:center}.table-scroll{width:100%;max-width:100%;overflow-x:auto}.plantel-stats-table{width:100%;min-width:680px}}
+.share-top10-container{width:100%;max-width:100%;margin:12px 0 4px;clear:both}
 </style>
 
 <style id="pending-kpi-button-fix">
@@ -2741,8 +2742,8 @@ function renderPlantel(){
       <p class="desc">Posiciones por puntos: victoria 3, empate 1. Los jugadores sin partidos quedan al final. Las estrellas de habilidad se ocultan en esta tabla; el perfil individual sigue disponible.</p>
       <div class="plantel-toolbar">
         <button class="edit-link" aria-pressed="${plantelEditMode?'true':'false'}" onclick="togglePlantelEdit()">${plantelEditMode ? 'Terminar edición' : 'Editar plantel'}</button>
-        <button class="share-top10-btn" onclick="compartirTop10WhatsApp()">📲 Compartir Top 10 por WhatsApp</button>
       </div>
+      <div class="share-top10-container"><button class="share-top10-btn" onclick="compartirTop10WhatsApp()">📲 Compartir Top 10 por WhatsApp</button></div>
       ${state.players.some(p=>p.active!==false) ? `
       <div class="table-scroll">
       <table class="plantel-stats-table" style="margin-top:10px;">
@@ -2772,7 +2773,7 @@ async function compartirTop10WhatsApp(){
   const rows=top.map((p,i)=>{
     const st=jugadorEstadisticas(p), y=250+i*rowH;
     const pts=st.ganados*3+st.empatados;
-    const name=svgEscTop10(nombreVisible(p));
+    const name=svgEscTop10((p.apodo||'').trim() || p.name || 'Jugador/a');
     return `<rect x="54" y="${y}" width="972" height="72" rx="14" fill="${i%2?'#171915':'#20221C'}" stroke="#494022" stroke-width="1"/>
       <text x="82" y="${y+45}" fill="#E7B53F" font-size="28" font-weight="900" font-family="Arial">${i+1}</text>
       <text x="145" y="${y+31}" fill="#F4F0E5" font-size="24" font-weight="700" font-family="Arial">${name.length>25?name.slice(0,24)+'…':name}</text>
