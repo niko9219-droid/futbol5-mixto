@@ -4215,5 +4215,82 @@ document.getElementById('tabs').addEventListener('click', e=>{
 }
 </style>
 
+
+
+<style id="desktop-plantel-spacing-v41">
+/* En escritorio aprovechamos el ancho disponible y separamos cada estadística.
+   La regla móvil v40 permanece intacta. */
+@media (min-width: 701px) {
+  .table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .plantel-stats-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: collapse;
+  }
+
+  .plantel-stats-table thead th:nth-child(1),
+  .plantel-stats-table tbody td:nth-child(1) {
+    width: 7% !important;
+  }
+
+  .plantel-stats-table thead th:nth-child(2),
+  .plantel-stats-table tbody td:nth-child(2) {
+    width: 28% !important;
+  }
+
+  .plantel-stats-table thead th:nth-child(3),
+  .plantel-stats-table tbody td:nth-child(3) {
+    width: 36% !important;
+  }
+
+  .plantel-stats-table thead th:nth-child(4),
+  .plantel-stats-table tbody td:nth-child(4) {
+    width: 18% !important;
+  }
+
+  .plantel-stats-table thead th:nth-child(5),
+  .plantel-stats-table tbody td:nth-child(5) {
+    width: 11% !important;
+  }
+
+  .plantel-stats-table thead th {
+    padding: 12px 12px !important;
+    text-align: left;
+  }
+
+  .plantel-stats-table tbody td {
+    padding: 14px 12px !important;
+    vertical-align: middle;
+  }
+
+  .plantel-stats-table tbody td.mobile-stats {
+    display: flex !important;
+    align-items: center;
+    flex-wrap: wrap;
+    column-gap: 16px !important;
+    row-gap: 8px !important;
+    padding-right: 18px !important;
+  }
+
+  .plantel-stats-table tbody td.mobile-stats > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    margin: 0 !important;
+  }
+
+  .plantel-stats-table tbody td.player-cell {
+    gap: 8px;
+  }
+}
+</style>
+
 </body>
 </html>
