@@ -1817,7 +1817,8 @@ function f5EscapeHtml(value){return String(value||'').replace(/[&<>"']/g,c=>({'&
 function f5PuedeAdministrarLiga(){ return !!(f5IsSuperAdmin || f5ActiveLeague?.membershipRole==='admin'); }
 function f5AdministrarLigaUI(){
   if(!f5PuedeAdministrarLiga()){ alert('Solo un administrador puede gestionar las copias y la configuración de esta liga.'); return; }
-  const choice=prompt(`ADMINISTRAR: ${f5ActiveLeague?.nombre||'Liga'}\n\n1. Importar base integral desde Excel\n2. Exportar respaldo integral a Excel\n3. Importar solo el plantel\n4. Exportar solo el plantel\n5. Reiniciar esta liga desde cero\n\nIngresá un número (1-5):`);
+  const puedeBorrar=f5IsSuperAdmin;
+  const choice=prompt(`ADMINISTRAR: ${f5ActiveLeague?.nombre||'Liga'}\n\n1. Importar base integral desde Excel\n2. Exportar respaldo integral a Excel\n3. Importar solo el plantel\n4. Exportar solo el plantel\n5. Reiniciar esta liga desde cero${puedeBorrar?'\n6. Eliminar esta liga definitivamente':''}\n\nIngresá un número (${puedeBorrar?'1-6':'1-5'}):`);
   if(choice===null)return;
   switch(choice.trim()){
     case '1': document.getElementById('excelInput').click(); break;
@@ -1825,7 +1826,39 @@ function f5AdministrarLigaUI(){
     case '3': document.getElementById('plantelExcelInput').click(); break;
     case '4': exportarPlantelExcel(); break;
     case '5': crearBaseDesdeCero(); break;
-    default: alert('Opción no válida. Elegí un número del 1 al 5.');
+    case '6': if(f5IsSuperAdmin) f5EliminarLigaUI(); else alert('Solo el propietario puede eliminar ligas.'); break;
+    default: alert(`Opción no válida. Elegí un número del 1 al ${f5IsSuperAdmin?'6':'5'}.`);
+  }
+}
+async function f5EliminarLigaUI(){
+  if(!f5IsSuperAdmin || !f5ActiveLeague){alert('Solo el propietario puede eliminar una liga.');return;}
+  if(f5AvailableLeagues.length<=1){alert('No podés eliminar la única liga que queda. Creá otra liga primero o conservá al menos una.');return;}
+  const liga=f5ActiveLeague;
+  const nombre=String(liga.nombre||'Liga');
+  const confirmacion=prompt(`⚠️ Vas a eliminar definitivamente la liga «${nombre}», sus datos y sus membresías. Esta acción no se puede deshacer.
+
+Para confirmar, escribí exactamente:
+ELIMINAR ${nombre}`);
+  if(confirmacion!==`ELIMINAR ${nombre}`){alert('Eliminación cancelada. No se modificó la liga.');return;}
+  try{
+    const dataSnap=await f5Db.collection('ligas').doc(liga.id).collection('data').get();
+    for(let i=0;i<dataSnap.docs.length;i+=400){
+      const batch=f5Db.batch();
+      dataSnap.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));
+      await batch.commit();
+    }
+    const membersSnap=await f5Db.collection('membresias').where('ligaId','==',liga.id).get();
+    for(let i=0;i<membersSnap.docs.length;i+=400){
+      const batch=f5Db.batch();
+      membersSnap.docs.slice(i,i+400).forEach(d=>batch.delete(d.ref));
+      await batch.commit();
+    }
+    await f5Db.collection('ligas').doc(liga.id).delete();
+    alert(`La liga «${nombre}» fue eliminada.`);
+    await f5CargarLigasUsuario();
+  }catch(e){
+    console.error('Error eliminando liga:',e);
+    alert('No se pudo eliminar la liga completa. Revisá la consola y las reglas de Firestore; no vuelvas a intentarlo hasta comprobar qué datos quedaron.');
   }
 }
 async function f5CambiarLiga(id){
@@ -1949,6 +1982,8 @@ async function loadState(){
       if(Array.isArray(cloudState.players) && Array.isArray(cloudState.matches)){
         state=cloudState;
         loaded=true;
+        const historialNormalizado=f5NormalizarNumeracionHistorial();
+        if(historialNormalizado) saveState();
         try{localStorage.setItem('futbol5-session',JSON.stringify(state));}catch(e){}
         actualizarEstadoExcel('✓ Base compartida cargada desde Firebase');
         if(loaded){
@@ -2129,6 +2164,46 @@ function fechaISOExcel(value, fallback){
   return d ? d.toISOString() : (fallback || new Date().toISOString());
 }
 
+// Normaliza el historial importado: los números deben ser consecutivos según la fecha.
+// Corrige además el caso heredado en que el partido original n.º 1 quedó fechado
+// el mismo día que el n.º 10, aunque existe un partido una semana después.
+function f5NormalizarNumeracionHistorial(){
+  if(!Array.isArray(state.matches) || !state.matches.length) return false;
+  let changed=false;
+  const jugados=state.matches.filter(m=>m.estado!=='armado');
+  const claveFecha=value=>{
+    const d=new Date(value);
+    if(Number.isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
+  const primerLegado=jugados.find(m=>Number(m.numero)===1 && m.date);
+  if(primerLegado){
+    const key=claveFecha(primerLegado.date);
+    const mismoDia=jugados.filter(m=>m!==primerLegado && claveFecha(m.date)===key);
+    if(key && mismoDia.length){
+      const d=new Date(primerLegado.date);
+      const siguienteClave=claveFecha(new Date(d.getTime()+7*86400000).toISOString());
+      const existeSemanaDespues=jugados.some(m=>claveFecha(m.date)===siguienteClave);
+      if(existeSemanaDespues){
+        primerLegado.date=new Date(d.getTime()-7*86400000).toISOString();
+        changed=true;
+      }
+    }
+  }
+  const orden=[...state.matches].sort((a,b)=>{
+    const da=new Date(a.estado==='armado'?(a.fechaArmado||a.date):(a.date||a.fechaArmado)).getTime();
+    const db=new Date(b.estado==='armado'?(b.fechaArmado||b.date):(b.date||b.fechaArmado)).getTime();
+    const ta=Number.isFinite(da)?da:0, tb=Number.isFinite(db)?db:0;
+    if(ta!==tb) return ta-tb;
+    return (Number(a.numero)||0)-(Number(b.numero)||0);
+  });
+  orden.forEach((m,i)=>{
+    const numero=i+1;
+    if(Number(m.numero)!==numero){m.numero=numero;changed=true;}
+  });
+  return changed;
+}
+
 function importarExcel(event){
   const file=event.target.files && event.target.files[0];
   if(!file) return;
@@ -2198,6 +2273,7 @@ function importarExcel(event){
       });
 
       state.lastTeams=null;
+      f5NormalizarNumeracionHistorial();
       const pendienteImportado=partidosPendientes()[0];
       if(pendienteImportado) sincronizarLastTeamsConPartido(pendienteImportado);
       loaded=true;
