@@ -4217,60 +4217,90 @@ document.getElementById('tabs').addEventListener('click', e=>{
 
 
 
-<style id="desktop-stats-inline-v42">
-/* Escritorio: mantener todas las estadísticas en una línea y separarlas.
-   La disposición compacta móvil de v40 queda intacta. */
+<style id="desktop-plantel-balanced-v43">
+/* Escritorio: tabla completa dentro del contenedor, sin scroll horizontal.
+   Mantiene intactas las reglas móviles de v40. */
 @media (min-width: 701px) {
   .table-scroll {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: visible !important;
   }
 
   .plantel-stats-table {
+    display: table !important;
     width: 100% !important;
-    min-width: 1000px !important;
-    table-layout: auto !important;
-    border-collapse: collapse;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
   }
 
-  .plantel-stats-table th,
-  .plantel-stats-table td {
-    padding: 12px 12px !important;
+  .plantel-stats-table thead {
+    display: table-header-group !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  .plantel-stats-table tbody {
+    display: table-row-group !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  .plantel-stats-table thead tr,
+  .plantel-stats-table tbody tr {
+    display: table-row !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  .plantel-stats-table thead th,
+  .plantel-stats-table tbody td {
+    display: table-cell !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 12px 8px !important;
     vertical-align: middle !important;
+    overflow: hidden !important;
   }
 
   .plantel-stats-table th:nth-child(1),
   .plantel-stats-table td:nth-child(1) {
-    min-width: 48px !important;
-    width: 58px !important;
+    width: 5% !important;
+    text-align: left !important;
+    padding-left: 3px !important;
+    padding-right: 4px !important;
   }
 
   .plantel-stats-table th:nth-child(2),
   .plantel-stats-table td:nth-child(2) {
-    min-width: 190px !important;
-    width: 230px !important;
+    width: 25% !important;
+    padding-left: 6px !important;
+    padding-right: 10px !important;
   }
 
   .plantel-stats-table th:nth-child(3),
   .plantel-stats-table td:nth-child(3) {
-    min-width: 390px !important;
-    width: 410px !important;
+    width: 42% !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
   }
 
   .plantel-stats-table td.mobile-stats {
     display: table-cell !important;
     white-space: nowrap !important;
     font-size: 12px !important;
-    line-height: 1.4 !important;
-    padding-right: 20px !important;
+    line-height: 1.5 !important;
   }
 
   .plantel-stats-table td.mobile-stats span {
     display: inline-block !important;
     white-space: nowrap !important;
-    margin-right: 13px !important;
+    margin: 0 8px 0 0 !important;
     vertical-align: middle !important;
   }
 
@@ -4280,14 +4310,20 @@ document.getElementById('tabs').addEventListener('click', e=>{
 
   .plantel-stats-table th:nth-child(4),
   .plantel-stats-table td:nth-child(4) {
-    min-width: 120px !important;
-    width: 140px !important;
+    width: 18% !important;
+    text-align: center !important;
   }
 
   .plantel-stats-table th:nth-child(5),
   .plantel-stats-table td:nth-child(5) {
-    min-width: 64px !important;
-    width: 74px !important;
+    width: 10% !important;
+    text-align: center !important;
+  }
+
+  .plantel-stats-table td:nth-child(2) .player-name-mobile {
+    max-width: 170px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 }
 </style>
