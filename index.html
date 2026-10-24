@@ -1491,6 +1491,24 @@ label{color:#D9D7D0}
   @media(max-width:480px){#f5AuthCard{padding:22px}}
 </style>
 
+
+<style id="player-statistics-contrast-v2">
+  .player-stats-detail{color:#20241f!important;background:#F7F4EA!important}
+  .player-stats-detail .player-stats-head h3{color:#20241f!important;font-weight:800!important;opacity:1!important}
+  .player-stats-detail .player-stats-head .desc{color:#596057!important;opacity:1!important}
+  .player-stats-detail .player-stats-grid>div{background:#fff!important;border-color:#dfe4dc!important}
+  .player-stats-detail .player-stats-grid b{color:#20241f!important;font-weight:850!important}
+  .player-stats-detail .player-stats-grid span{color:#626a60!important;opacity:1!important}
+  .player-stats-detail .player-stats-grid .win b{color:#187343!important}
+  .player-stats-detail .player-stats-grid .draw b{color:#8b6500!important}
+  .player-stats-detail .player-stats-grid .loss b{color:#b42332!important}
+  .player-stats-detail .player-stats-grid .best b{color:#a56a00!important}
+  .player-stats-detail .player-stats-grid .worst b{color:#b42332!important}
+  .player-stats-detail .player-winrate{background:#EAF4ED!important;color:#28563A!important;font-weight:600!important}
+  .player-stats-detail .player-winrate strong{color:#14532d!important}
+  .player-stats-detail .btn-mini{background:#171a17!important;color:#fff!important;border-color:#d6a43f!important}
+  @media(max-width:700px){.player-stats-detail .player-stats-head h3{font-size:17px!important;line-height:1.25!important}.player-stats-detail .player-stats-grid b{font-size:21px!important}}
+</style>
 </head>
 <body>
 
@@ -2639,18 +2657,23 @@ function renderPlantel(){
     .slice()
     .sort((a,b)=>{
       const sa=jugadorEstadisticas(a), sb=jugadorEstadisticas(b);
-      // Ranking del plantel:
-      // 1) más victorias
-      // 2) menos derrotas
-      // 3) más veces destacado
-      // 4) menos veces que le costó
-      // 5) mayor habilidad actual (desempate final)
+      // Ranking por rendimiento: sin partidos siempre al final.
+      // Puntos internos: victoria = 3, empate = 1, derrota = 0.
+      const pa=sa.ganados*3+sa.empatados;
+      const pb=sb.ganados*3+sb.empatados;
+      const ratioA=sa.jugados ? pa/(sa.jugados*3) : -1;
+      const ratioB=sb.jugados ? pb/(sb.jugados*3) : -1;
+      if(sa.jugados===0 && sb.jugados>0) return 1;
+      if(sb.jugados===0 && sa.jugados>0) return -1;
       return (
+        (pb-pa) ||
+        (ratioB-ratioA) ||
         (sb.ganados-sa.ganados) ||
         (sa.perdidos-sb.perdidos) ||
         (sb.destacados-sa.destacados) ||
         (sa.costaron-sb.costaron) ||
-        (sb.skill-sa.skill)
+        (sb.skill-sa.skill) ||
+        nombreVisible(a).localeCompare(nombreVisible(b),'es')
       );
     })
     .map(p=>{
