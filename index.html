@@ -4096,5 +4096,28 @@ document.getElementById('tabs').addEventListener('click', e=>{
   });
 })();
 </script>
+
+<style id="plantel-mobile-compact-v39">
+/* Columna de posición muy estrecha para priorizar jugador y estadísticas en móvil. */
+.plantel-stats-table { table-layout: fixed; min-width: 620px; }
+.plantel-stats-table th:nth-child(1),
+.plantel-stats-table td:nth-child(1) { width: 32px !important; min-width: 32px !important; max-width: 32px !important; padding-left: 3px !important; padding-right: 3px !important; text-align: center; }
+.plantel-stats-table th:nth-child(2),
+.plantel-stats-table td:nth-child(2) { width: 145px; min-width: 145px; }
+.plantel-stats-table th:nth-child(3),
+.plantel-stats-table td:nth-child(3) { width: 235px; min-width: 235px; }
+.plantel-stats-table th:nth-child(4),
+.plantel-stats-table td:nth-child(4) { width: 78px; min-width: 78px; }
+.plantel-stats-table th:nth-child(5),
+.plantel-stats-table td:nth-child(5) { width: 48px; min-width: 48px; }
+.rank-position { font-size: 13px; padding-left: 2px !important; padding-right: 2px !important; }
+@media (max-width: 700px) {
+  .table-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
+  .plantel-stats-table { width: 620px !important; min-width: 620px !important; }
+  .plantel-stats-table th:nth-child(1),
+  .plantel-stats-table td:nth-child(1) { width: 32px !important; min-width: 32px !important; max-width: 32px !important; }
+}
+</style>
+
 </body>
 </html>
