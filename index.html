@@ -368,6 +368,18 @@
 .player-stats-grid b{display:block;font-size:22px;line-height:1.1}.player-stats-grid span{font-size:11px;color:var(--tinta-suave)}
 .player-winrate{margin-top:12px;padding:10px 12px;border-radius:10px;background:#EAF4ED;color:#28563A}
 @media(max-width:700px){.player-stats-grid{grid-template-columns:repeat(3,1fr)}.player-stats-detail{padding:12px}}
+
+.plantel-stats-table{min-width:680px}
+.plantel-stats-table th:nth-child(1){width:56px;min-width:56px;text-align:center}
+.plantel-stats-table th:nth-child(2){min-width:170px}
+.plantel-stats-table th:nth-child(3){min-width:235px}
+.plantel-stats-table th:nth-child(4){width:90px;text-align:center}
+.plantel-stats-table th:nth-child(5){width:110px}
+.rank-position{font-weight:900;color:#E7B53F;text-align:center;font-size:15px;white-space:nowrap}
+.plantel-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:10px 0}
+.share-top10-btn{background:linear-gradient(135deg,#D5A136,#E9B94B);color:#171711;border:1px solid #F0C75D;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+.share-top10-btn:active{transform:scale(.98)}
+@media(max-width:700px){.plantel-toolbar{align-items:stretch}.share-top10-btn{width:100%;min-height:44px}}
 </style>
 
 <style id="pending-kpi-button-fix">
@@ -2652,34 +2664,24 @@ function toggleAgregarJugador(){
   const abierto=card.classList.toggle('is-open');
   btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
 }
+function obtenerRankingJugadores(){
+  return state.players.filter(p=>p.active!==false).slice().sort((a,b)=>{
+    const sa=jugadorEstadisticas(a), sb=jugadorEstadisticas(b);
+    const pa=sa.ganados*3+sa.empatados, pb=sb.ganados*3+sb.empatados;
+    const ratioA=sa.jugados ? pa/(sa.jugados*3) : -1;
+    const ratioB=sb.jugados ? pb/(sb.jugados*3) : -1;
+    if(sa.jugados===0 && sb.jugados>0) return 1;
+    if(sb.jugados===0 && sa.jugados>0) return -1;
+    return (pb-pa)||(ratioB-ratioA)||(sb.ganados-sa.ganados)||(sa.perdidos-sb.perdidos)||(sb.destacados-sa.destacados)||(sa.costaron-sb.costaron)||(nombreVisible(a).localeCompare(nombreVisible(b),'es'));
+  });
+}
 function renderPlantel(){
-  const rows = state.players.filter(p=>p.active!==false)
-    .slice()
-    .sort((a,b)=>{
-      const sa=jugadorEstadisticas(a), sb=jugadorEstadisticas(b);
-      // Ranking por rendimiento: sin partidos siempre al final.
-      // Puntos internos: victoria = 3, empate = 1, derrota = 0.
-      const pa=sa.ganados*3+sa.empatados;
-      const pb=sb.ganados*3+sb.empatados;
-      const ratioA=sa.jugados ? pa/(sa.jugados*3) : -1;
-      const ratioB=sb.jugados ? pb/(sb.jugados*3) : -1;
-      if(sa.jugados===0 && sb.jugados>0) return 1;
-      if(sb.jugados===0 && sa.jugados>0) return -1;
-      return (
-        (pb-pa) ||
-        (ratioB-ratioA) ||
-        (sb.ganados-sa.ganados) ||
-        (sa.perdidos-sb.perdidos) ||
-        (sb.destacados-sa.destacados) ||
-        (sa.costaron-sb.costaron) ||
-        (sb.skill-sa.skill) ||
-        nombreVisible(a).localeCompare(nombreVisible(b),'es')
-      );
-    })
-    .map(p=>{
+  const ranking=obtenerRankingJugadores();
+  const rows = ranking.map((p,rankIndex)=>{
       const s=jugadorEstadisticas(p);
       return `
       <tr>
+        <td class="rank-position">${s.jugados>0 ? rankIndex+1 : '—'}</td>
         <td class="player-cell">
           ${plantelEditMode ? `<button class="player-edit-inline" title="Modificar ${escapeHtml(nombreVisible(p))}" onclick="editarPlayer('${p.id}')">✎</button>` : ''}
           ${avatarHTML(p)}<span class="player-name-mobile">${p.apodo || p.name}</span>
@@ -2694,7 +2696,6 @@ function renderPlantel(){
           <span class="stat-best"><b>⭐</b> ${s.destacados}</span>
           <span class="stat-worst"><b>🔻</b> ${s.costaron}</span>
         </td>
-        <td class="skill-cell">${estrellas(p.skill)}</td>
         <td class="specialty-icon-cell" title="${especialLabel(p.habilidadEspecial)}">${especialIcon(p.habilidadEspecial)}</td>
         <td class="row-actions">
           <button class="btn-mini stats-mini" title="Ver estadísticas" onclick="mostrarEstadisticasJugador('${p.id}')">📊</button>
@@ -2737,12 +2738,15 @@ function renderPlantel(){
 
     <div class="card">
       <h2>Plantel (${state.players.filter(p=>p.active!==false).length})</h2>
-      <p class="desc">Ordenado por rendimiento: primero más victorias, luego menos derrotas, más veces destacado, menos veces que le costó y, en último lugar, habilidad actual para desempatar.</p>
-      <button class="edit-link" aria-pressed="${plantelEditMode?'true':'false'}" onclick="togglePlantelEdit()">${plantelEditMode ? 'Terminar edición' : 'Editar plantel'}</button>
+      <p class="desc">Posiciones por puntos: victoria 3, empate 1. Los jugadores sin partidos quedan al final. Las estrellas de habilidad se ocultan en esta tabla; el perfil individual sigue disponible.</p>
+      <div class="plantel-toolbar">
+        <button class="edit-link" aria-pressed="${plantelEditMode?'true':'false'}" onclick="togglePlantelEdit()">${plantelEditMode ? 'Terminar edición' : 'Editar plantel'}</button>
+        <button class="share-top10-btn" onclick="compartirTop10WhatsApp()">📲 Compartir Top 10 por WhatsApp</button>
+      </div>
       ${state.players.some(p=>p.active!==false) ? `
       <div class="table-scroll">
       <table class="plantel-stats-table" style="margin-top:10px;">
-        <thead><tr><th>Jugador/a</th><th>Estadísticas</th><th>Habilidad</th><th>Especialidad</th><th></th></tr></thead>
+        <thead><tr><th>Pos.</th><th>Jugador/a</th><th>Estadísticas</th><th>Especialidad</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>` : `<div class="empty">Todavía no cargaste jugadores.</div>`}
       <div class="stats-legend"><span><b>PJ</b> partidos</span><span class="stat-win"><b>G</b> ganados</span><span class="stat-draw"><b>E</b> empatados</span><span class="stat-loss"><b>P</b> perdidos</span><span class="stat-best"><b>⭐</b> destacó</span><span class="stat-worst"><b>🔻</b> costó</span></div>
@@ -2757,6 +2761,54 @@ function renderPlantel(){
       <div id="evoChart"></div>
     </div>` : ''}
   `;
+}
+
+
+function svgEscTop10(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');}
+async function compartirTop10WhatsApp(){
+  const top=obtenerRankingJugadores().filter(p=>jugadorEstadisticas(p).jugados>0).slice(0,10);
+  if(!top.length){alert('Todavía no hay jugadores con partidos jugados para armar el Top 10.');return;}
+  const W=1080, rowH=88, H=270+top.length*rowH+70;
+  const rows=top.map((p,i)=>{
+    const st=jugadorEstadisticas(p), y=250+i*rowH;
+    const pts=st.ganados*3+st.empatados;
+    const name=svgEscTop10(nombreVisible(p));
+    return `<rect x="54" y="${y}" width="972" height="72" rx="14" fill="${i%2?'#171915':'#20221C'}" stroke="#494022" stroke-width="1"/>
+      <text x="82" y="${y+45}" fill="#E7B53F" font-size="28" font-weight="900" font-family="Arial">${i+1}</text>
+      <text x="145" y="${y+31}" fill="#F4F0E5" font-size="24" font-weight="700" font-family="Arial">${name.length>25?name.slice(0,24)+'…':name}</text>
+      <text x="145" y="${y+55}" fill="#A9ADA5" font-size="15" font-family="Arial">${st.jugados} PJ · ${st.ganados} G · ${st.empatados} E · ${st.perdidos} P</text>
+      <text x="960" y="${y+43}" text-anchor="end" fill="#E7B53F" font-size="24" font-weight="800" font-family="Arial">${pts} pts</text>`;
+  }).join('');
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    <defs><linearGradient id="bgTop" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#0C0D0B"/><stop offset="100%" stop-color="#1A1C16"/></linearGradient><linearGradient id="goldTop" x1="0" x2="1"><stop offset="0%" stop-color="#C99428"/><stop offset="100%" stop-color="#E7B53F"/></linearGradient></defs>
+    <rect width="100%" height="100%" fill="url(#bgTop)"/>
+    <text x="56" y="62" fill="#E7B53F" font-size="19" font-weight="700" letter-spacing="4" font-family="Arial">LIGA INTERNA · FÚTBOL 5 MIXTO</text>
+    <text x="54" y="125" fill="#F4F0E5" font-size="58" font-weight="900" font-family="Arial">F5 MANAGER</text>
+    <text x="56" y="170" fill="#E7B53F" font-size="30" font-weight="800" font-family="Arial">TOP 10 · RANKING DE JUGADORES</text>
+    <text x="56" y="205" fill="#A9ADA5" font-size="17" font-family="Arial">Puntaje: victoria 3 · empate 1 · derrota 0</text>
+    ${rows}
+    <text x="540" y="${H-28}" text-anchor="middle" fill="#777A74" font-size="16" font-family="Arial">F5 Manager · Ranking actualizado ${new Date().toLocaleDateString('es-AR')}</text>
+  </svg>`;
+  const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+  try{
+    const img=new Image();
+    img.onload=async()=>{
+      try{
+        const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
+        const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,W,H);URL.revokeObjectURL(url);
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png',0.95));
+        if(!blob) throw new Error('No se pudo generar la imagen.');
+        const file=new File([blob],`f5_manager_top10_${new Date().toISOString().slice(0,10)}.png`,{type:'image/png'});
+        if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+          await navigator.share({files:[file],title:'F5 Manager · Top 10',text:'⚽ Top 10 de F5 Manager'});
+        }else{
+          const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+          alert('Se descargó la imagen del Top 10. Abrí WhatsApp en tu teléfono y adjuntala para compartirla.');
+        }
+      }catch(err){URL.revokeObjectURL(url);if(err?.name!=='AbortError')alert('No se pudo preparar la imagen para compartir. Probá desde el navegador del teléfono.');}
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);alert('No se pudo generar la imagen del Top 10.');};img.src=url;
+  }catch(e){URL.revokeObjectURL(url);alert('No se pudo preparar el Top 10.');}
 }
 
 function addPlayer(){
