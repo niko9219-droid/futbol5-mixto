@@ -4135,5 +4135,48 @@ document.getElementById('tabs').addEventListener('click', e=>{
   }
 }
 </style>
+
+<style id="plantel-mobile-final-v41">
+/* Ajuste puntual móvil: posición estrecha y nombre limitado a 10 caracteres. */
+@media (max-width:700px) {
+  .plantel-stats-table {
+    width: 620px !important;
+    min-width: 620px !important;
+    table-layout: fixed !important;
+  }
+  .plantel-stats-table thead tr,
+  .plantel-stats-table tbody tr {
+    display: grid !important;
+    grid-template-columns: 32px 180px 235px 78px 48px !important;
+    width: 620px !important;
+  }
+  .plantel-stats-table th:nth-child(1),
+  .plantel-stats-table td:nth-child(1) {
+    width: 32px !important; min-width: 32px !important; max-width: 32px !important;
+    padding-left: 2px !important; padding-right: 2px !important; text-align: center !important;
+  }
+  .plantel-stats-table th:nth-child(2),
+  .plantel-stats-table td:nth-child(2) {
+    width: 180px !important; min-width: 180px !important; max-width: 180px !important;
+    overflow: hidden !important;
+  }
+  .plantel-stats-table .player-cell {
+    display: flex !important; align-items: center !important; gap: 5px !important;
+    min-width: 0 !important; max-width: 180px !important; overflow: hidden !important;
+    white-space: nowrap !important;
+  }
+  .plantel-stats-table .player-cell .player-avatar {
+    flex: 0 0 38px !important; width: 38px !important; height: 38px !important;
+    min-width: 38px !important; min-height: 38px !important;
+  }
+  .plantel-stats-table .player-name-mobile {
+    display: inline-block !important; flex: 0 1 10ch !important;
+    width: 10ch !important; min-width: 0 !important; max-width: 10ch !important;
+    overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
+  }
+  .plantel-stats-table .gender-tag { flex: 0 0 auto !important; margin-left: 2px !important; }
+}
+</style>
+
 </body>
 </html>
